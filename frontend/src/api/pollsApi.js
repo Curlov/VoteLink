@@ -45,3 +45,9 @@ export async function getPollResults(publicId) {
 
   return handleResponse(response);
 }
+
+export async function getAdminPoll(adminToken) {
+  const response = await fetch(`${API_BASE_URL}/polls/admin/${adminToken}`);
+
+  return handleResponse(response);
+}

@@ -69,6 +69,8 @@
         admin_token
         title
         description
+        creator_name
+        creator_email
         is_anonymous
         allow_multiple_votes
         created_at
@@ -99,6 +101,12 @@
     Der admin_token ist ein geheimer Verwaltungslink für den Ersteller.
     Beispiel: /admin/secret456
     Damit kann man später Ergebnisse verwalten, die Abstimmung schließen oder löschen.
+
+    creator_name und creator_email
+    Speichern, wer die Abstimmung erstellt hat. Die E-Mail ist für Verwaltung
+    und spätere Verantwortlichkeit wichtig. Eine Organisation kann später
+    ergänzt werden, wenn Dashboard, Pro-Funktionen oder Anti-Spam-Regeln
+    konkreter werden.
 
 ## Backend-Pakete
 
