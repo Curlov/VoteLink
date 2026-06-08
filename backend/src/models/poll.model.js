@@ -1,5 +1,5 @@
 import { pool } from "../db/pool.js";
-import { nanoid } from "nanoid";
+import { hashVoterToken } from "../utils/voterToken.js";
 
 export async function createPoll({
   publicId,
@@ -128,8 +128,56 @@ export async function getPollByPublicId(publicId) {
   };
 }
 
-export async function createVote({ publicId, optionIds, voterName }) {
+export async function getParticipationByPublicId({ publicId, voterToken }) {
+  const voterTokenHash = hashVoterToken(voterToken);
+
+  if (!voterTokenHash) {
+    return {
+      success: false,
+      status: 400,
+      error: "Teilnahme-Token fehlt oder ist ungültig.",
+    };
+  }
+
+  const result = await pool.query(
+    `
+    SELECT pp.id
+    FROM polls p
+    LEFT JOIN poll_participations pp
+      ON pp.poll_id = p.id
+      AND pp.voter_token_hash = $2
+    WHERE p.public_id = $1
+    `,
+    [publicId, voterTokenHash]
+  );
+
+  const row = result.rows[0];
+
+  if (!row) {
+    return {
+      success: false,
+      status: 404,
+      error: "Abstimmung wurde nicht gefunden.",
+    };
+  }
+
+  return {
+    success: true,
+    hasVoted: Boolean(row.id),
+  };
+}
+
+export async function createVote({ publicId, optionIds, voterName, voterToken }) {
   const client = await pool.connect();
+  const voterTokenHash = hashVoterToken(voterToken);
+
+  if (!voterTokenHash) {
+    return {
+      success: false,
+      status: 400,
+      error: "Teilnahme-Token fehlt oder ist ungültig.",
+    };
+  }
 
   try {
     await client.query("BEGIN");
@@ -205,8 +253,29 @@ export async function createVote({ publicId, optionIds, voterName }) {
       };
     }
 
+    const participationResult = await client.query(
+      `
+      INSERT INTO poll_participations (
+        poll_id,
+        voter_token_hash
+      )
+      VALUES ($1, $2)
+      ON CONFLICT (poll_id, voter_token_hash) DO NOTHING
+      RETURNING id
+      `,
+      [poll.id, voterTokenHash]
+    );
+
+    if (participationResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        status: 409,
+        error: "Sie haben Ihre Stimme bereits abgegeben.",
+      };
+    }
+
     const votes = [];
-    const voterToken = nanoid(32);
 
     for (const option of optionResult.rows) {
       const voteResult = await client.query(
@@ -224,7 +293,7 @@ export async function createVote({ publicId, optionIds, voterName }) {
           poll.id,
           option.id,
           poll.is_anonymous ? null : voterName.trim(),
-          voterToken,
+          voterTokenHash,
         ]
       );
 
@@ -366,4 +435,134 @@ export async function getPollAdminByToken(adminToken) {
   }
 
   return buildPollResults(poll, { includeVoterNames: true });
+}
+
+export async function updatePollAdminByToken(
+  adminToken,
+  { title, description }
+) {
+  const updates = [];
+  const values = [adminToken];
+
+  if (title !== undefined) {
+    values.push(title);
+    updates.push(`title = $${values.length}`);
+  }
+
+  if (description !== undefined) {
+    values.push(description || null);
+    updates.push(`description = $${values.length}`);
+  }
+
+  if (updates.length === 0) {
+    return getPollAdminByToken(adminToken);
+  }
+
+  const updateResult = await pool.query(
+    `
+    UPDATE polls
+    SET ${updates.join(", ")}
+    WHERE admin_token = $1
+    RETURNING id
+    `,
+    values
+  );
+
+  if (updateResult.rowCount === 0) {
+    return null;
+  }
+
+  return getPollAdminByToken(adminToken);
+}
+
+export async function closePollAdminByToken(adminToken) {
+  const updateResult = await pool.query(
+    `
+    UPDATE polls
+    SET expires_at = CURRENT_TIMESTAMP
+    WHERE admin_token = $1
+    RETURNING id
+    `,
+    [adminToken]
+  );
+
+  if (updateResult.rowCount === 0) {
+    return null;
+  }
+
+  return getPollAdminByToken(adminToken);
+}
+
+export async function extendPollAdminByToken(adminToken, durationDays) {
+  const updateResult = await pool.query(
+    `
+    UPDATE polls
+    SET expires_at =
+      GREATEST(COALESCE(expires_at, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
+      + ($2::int * interval '1 day')
+    WHERE admin_token = $1
+    RETURNING id
+    `,
+    [adminToken, durationDays]
+  );
+
+  if (updateResult.rowCount === 0) {
+    return null;
+  }
+
+  return getPollAdminByToken(adminToken);
+}
+
+export async function deletePollAdminByToken(adminToken) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const pollResult = await client.query(
+      `
+      SELECT id
+      FROM polls
+      WHERE admin_token = $1
+      `,
+      [adminToken]
+    );
+
+    const poll = pollResult.rows[0];
+
+    if (!poll) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    await client.query(
+      `
+      DELETE FROM votes
+      WHERE poll_id = $1
+      `,
+      [poll.id]
+    );
+    await client.query(
+      `
+      DELETE FROM poll_options
+      WHERE poll_id = $1
+      `,
+      [poll.id]
+    );
+    await client.query(
+      `
+      DELETE FROM polls
+      WHERE id = $1
+      `,
+      [poll.id]
+    );
+
+    await client.query("COMMIT");
+    return true;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

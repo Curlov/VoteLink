@@ -2,80 +2,80 @@ import { nanoid } from "nanoid";
 import {
   createPoll,
   getPollByPublicId,
+  getParticipationByPublicId,
   createVote,
   getPollResultsByPublicId,
   getPollAdminByToken,
+  updatePollAdminByToken,
+  closePollAdminByToken,
+  extendPollAdminByToken,
+  deletePollAdminByToken,
 } from "../models/poll.model.js";
+import {
+  cleanAdminPollUpdateInput,
+  cleanCreatePollInput,
+  cleanDurationDays,
+} from "../utils/pollValidation.js";
+import { sendPollCreatedEmail } from "../services/mail.service.js";
+
+function getPublicBaseUrl(req) {
+  const configuredBaseUrl = process.env.PUBLIC_APP_URL || req.get("origin");
+
+  return String(configuredBaseUrl || "").replace(/\/$/, "");
+}
 
 export async function createPollController(req, res) {
   try {
-    const {
-      title,
-      description = "",
-      creatorName = "",
-      creatorEmail = "",
-      isAnonymous = true,
-      allowMultipleVotes = false,
-      durationDays = 7,
-      options,
-    } = req.body;
+    const cleanedInput = cleanCreatePollInput(req.body);
 
-    if (!title || title.trim().length < 3) {
+    if (!cleanedInput.success) {
       return res.status(400).json({
-        error: "Der Titel muss mindestens 3 Zeichen lang sein.",
+        error: cleanedInput.error,
       });
     }
 
-    const cleanedCreatorName = String(creatorName).trim();
-    const cleanedCreatorEmail = String(creatorEmail).trim().toLowerCase();
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanedCreatorEmail)) {
-      return res.status(400).json({
-        error: "Bitte gib eine gültige E-Mail-Adresse an.",
-      });
-    }
-
-    if (!Array.isArray(options) || options.length < 2) {
-      return res.status(400).json({
-        error: "Eine Abstimmung braucht mindestens 2 Optionen.",
-      });
-    }
-
-    const cleanedOptions = options
-      .map((option) => String(option).trim())
-      .filter((option) => option.length > 0);
-
-    if (cleanedOptions.length < 2) {
-      return res.status(400).json({
-        error: "Eine Abstimmung braucht mindestens 2 gültige Optionen.",
-      });
-    }
-
-    const allowedDurationDays = [1, 7, 14, 28];
-    const cleanedDurationDays = Number(durationDays);
-
-    if (!allowedDurationDays.includes(cleanedDurationDays)) {
-      return res.status(400).json({
-        error: "Bitte wähle eine gültige Laufzeit aus.",
-      });
-    }
-
-    const expiresAt = new Date(
-      Date.now() + cleanedDurationDays * 24 * 60 * 60 * 1000
-    );
+    const cleanedPoll = cleanedInput.poll;
 
     const poll = await createPoll({
       publicId: nanoid(10),
       adminToken: nanoid(32),
-      title: title.trim(),
-      description: description.trim(),
-      creatorName: cleanedCreatorName,
-      creatorEmail: cleanedCreatorEmail,
-      isAnonymous: Boolean(isAnonymous),
-      allowMultipleVotes: Boolean(allowMultipleVotes),
-      expiresAt,
-      options: cleanedOptions,
+      ...cleanedPoll,
     });
+    const publicBaseUrl = getPublicBaseUrl(req);
+    const publicUrl = publicBaseUrl
+      ? `${publicBaseUrl}/p/${poll.public_id}`
+      : `/p/${poll.public_id}`;
+    const adminUrl = publicBaseUrl
+      ? `${publicBaseUrl}/admin/${poll.admin_token}`
+      : `/admin/${poll.admin_token}`;
+    let emailDelivery = {
+      attempted: false,
+      sent: false,
+      skipped: true,
+    };
+
+    try {
+      const emailResult = await sendPollCreatedEmail({
+        to: poll.creator_email,
+        title: poll.title,
+        publicUrl,
+        adminUrl,
+      });
+
+      emailDelivery = {
+        attempted: !emailResult.skipped,
+        sent: !emailResult.skipped,
+        skipped: emailResult.skipped,
+      };
+    } catch (emailError) {
+      console.error("E-Mail mit Abstimmungslinks konnte nicht gesendet werden:");
+      console.error(emailError.message);
+      emailDelivery = {
+        attempted: true,
+        sent: false,
+        skipped: false,
+      };
+    }
 
     res.status(201).json({
       message: "Abstimmung wurde erstellt.",
@@ -95,6 +95,7 @@ export async function createPollController(req, res) {
         publicUrl: `/p/${poll.public_id}`,
         adminUrl: `/admin/${poll.admin_token}`,
       },
+      emailDelivery,
     });
   } catch (error) {
     console.error(error);
@@ -143,7 +144,7 @@ export async function getPollController(req, res) {
 export async function voteController(req, res) {
   try {
     const { publicId } = req.params;
-    const { optionId, optionIds, voterName = "" } = req.body;
+    const { optionId, optionIds, voterName = "", voterToken } = req.body || {};
 
     const selectedOptionIds = Array.isArray(optionIds) ? optionIds : [optionId];
     const cleanedOptionIds = [
@@ -167,6 +168,7 @@ export async function voteController(req, res) {
       publicId,
       optionIds: cleanedOptionIds,
       voterName,
+      voterToken,
     });
 
     if (!result.success) {
@@ -194,6 +196,34 @@ export async function voteController(req, res) {
 
     res.status(500).json({
       error: "Die Stimme konnte nicht gespeichert werden.",
+    });
+  }
+}
+
+export async function getParticipationController(req, res) {
+  try {
+    const { publicId } = req.params;
+    const { voterToken } = req.body || {};
+
+    const result = await getParticipationByPublicId({
+      publicId,
+      voterToken,
+    });
+
+    if (!result.success) {
+      return res.status(result.status).json({
+        error: result.error,
+      });
+    }
+
+    res.json({
+      hasVoted: result.hasVoted,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Der Teilnahmestatus konnte nicht geprüft werden.",
     });
   }
 }
@@ -242,6 +272,118 @@ export async function getAdminPollController(req, res) {
 
     res.status(500).json({
       error: "Der Adminbereich konnte nicht geladen werden.",
+    });
+  }
+}
+
+export async function updateAdminPollController(req, res) {
+  try {
+    const { adminToken } = req.params;
+    const cleanedInput = cleanAdminPollUpdateInput(req.body);
+
+    if (!cleanedInput.success) {
+      return res.status(400).json({
+        error: cleanedInput.error,
+      });
+    }
+
+    const poll = await updatePollAdminByToken(adminToken, cleanedInput.update);
+
+    if (!poll) {
+      return res.status(404).json({
+        error: "Admin-Link wurde nicht gefunden.",
+      });
+    }
+
+    res.json({
+      message: "Abstimmung wurde aktualisiert.",
+      poll,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Die Abstimmung konnte nicht aktualisiert werden.",
+    });
+  }
+}
+
+export async function closeAdminPollController(req, res) {
+  try {
+    const { adminToken } = req.params;
+    const poll = await closePollAdminByToken(adminToken);
+
+    if (!poll) {
+      return res.status(404).json({
+        error: "Admin-Link wurde nicht gefunden.",
+      });
+    }
+
+    res.json({
+      message: "Abstimmung wurde geschlossen.",
+      poll,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Die Abstimmung konnte nicht geschlossen werden.",
+    });
+  }
+}
+
+export async function extendAdminPollController(req, res) {
+  try {
+    const { adminToken } = req.params;
+    const cleanedDuration = cleanDurationDays(req.body.durationDays);
+
+    if (!cleanedDuration.success) {
+      return res.status(400).json({
+        error: cleanedDuration.error,
+      });
+    }
+
+    const poll = await extendPollAdminByToken(
+      adminToken,
+      cleanedDuration.durationDays
+    );
+
+    if (!poll) {
+      return res.status(404).json({
+        error: "Admin-Link wurde nicht gefunden.",
+      });
+    }
+
+    res.json({
+      message: "Laufzeit wurde verlängert.",
+      poll,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Die Laufzeit konnte nicht verlängert werden.",
+    });
+  }
+}
+
+export async function deleteAdminPollController(req, res) {
+  try {
+    const { adminToken } = req.params;
+    const isDeleted = await deletePollAdminByToken(adminToken);
+
+    if (!isDeleted) {
+      return res.status(404).json({
+        error: "Admin-Link wurde nicht gefunden.",
+      });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Die Abstimmung konnte nicht gelöscht werden.",
     });
   }
 }

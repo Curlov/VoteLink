@@ -1,32 +1,114 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getPoll, vote, getPollResults } from "../api/pollsApi";
+import {
+  getParticipation,
+  getPoll,
+  vote,
+  getPollResults,
+} from "../api/pollsApi";
+
+function createFallbackToken() {
+  const bytes = new Uint8Array(24);
+  window.crypto.getRandomValues(bytes);
+
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
+}
+
+function getVoterTokenStorageKey(publicId) {
+  return `votelink:poll:${publicId}:voterToken`;
+}
+
+function getOrCreateVoterToken(publicId) {
+  const storageKey = getVoterTokenStorageKey(publicId);
+  let existingToken;
+
+  try {
+    existingToken = window.localStorage?.getItem(storageKey);
+  } catch {
+    existingToken = null;
+  }
+
+  if (existingToken) {
+    return existingToken;
+  }
+
+  const voterToken = window.crypto.randomUUID
+    ? window.crypto.randomUUID()
+    : createFallbackToken();
+
+  try {
+    window.localStorage?.setItem(storageKey, voterToken);
+  } catch {
+    return voterToken;
+  }
+
+  return voterToken;
+}
+
+function formatRemainingTime(expiresAt, now) {
+  const remainingMilliseconds = new Date(expiresAt).getTime() - now.getTime();
+
+  if (remainingMilliseconds <= 0) {
+    return "abgelaufen";
+  }
+
+  const totalSeconds = Math.floor(remainingMilliseconds / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days} T ${String(hours).padStart(2, "0")} Std ${String(
+      minutes
+    ).padStart(2, "0")} Min`;
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}:${String(seconds).padStart(2, "0")}`;
+}
 
 export function VotePage() {
   const { publicId } = useParams();
 
   const [poll, setPoll] = useState(null);
   const [results, setResults] = useState(null);
+  const [voterToken, setVoterToken] = useState("");
   const [selectedOptionIds, setSelectedOptionIds] = useState([]);
   const [voterName, setVoterName] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
+  const [hasJustVoted, setHasJustVoted] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [error, setError] = useState("");
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     async function loadPageData() {
       try {
         setError("");
         setIsLoading(true);
+        setHasJustVoted(false);
 
-        const pollResponse = await getPoll(publicId);
-        const resultsResponse = await getPollResults(publicId);
+        const currentVoterToken = getOrCreateVoterToken(publicId);
+        setVoterToken(currentVoterToken);
+
+        const [pollResponse, resultsResponse, participationResponse] =
+          await Promise.all([
+            getPoll(publicId),
+            getPollResults(publicId),
+            getParticipation(publicId, currentVoterToken),
+          ]);
 
         setPoll(pollResponse.poll);
         setResults(resultsResponse.results);
+        setHasVoted(participationResponse.hasVoted);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -36,6 +118,14 @@ export function VotePage() {
 
     loadPageData();
   }, [publicId]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -52,12 +142,15 @@ export function VotePage() {
       await vote(publicId, {
         optionIds: selectedOptionIds.map(Number),
         voterName,
+        voterToken,
       });
 
       const resultsResponse = await getPollResults(publicId);
 
       setResults(resultsResponse.results);
       setHasVoted(true);
+      setHasJustVoted(true);
+      setSelectedOptionIds([]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -81,6 +174,16 @@ export function VotePage() {
     setSelectedOptionIds([optionId]);
   }
 
+  function handleResetLocalVoteForTesting() {
+    try {
+      window.localStorage?.removeItem(getVoterTokenStorageKey(publicId));
+    } catch {
+      // Dev-only fallback: reloading will create an in-memory token if storage is blocked.
+    }
+
+    window.location.reload();
+  }
+
   if (isLoading) {
     return (
       <main>
@@ -99,7 +202,15 @@ export function VotePage() {
   }
 
   const optionCount = results?.options.length || 1;
-  const isExpired = poll?.expiresAt && new Date(poll.expiresAt) <= new Date();
+  const expiresAtDate = poll?.expiresAt ? new Date(poll.expiresAt) : null;
+  const isExpired = expiresAtDate && expiresAtDate <= now;
+  const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const remainingTime = expiresAtDate
+    ? formatRemainingTime(expiresAtDate, now)
+    : "";
 
   const barWidth = optionCount <= 3 ? 72 : optionCount <= 5 ? 58 : 44;
   const optionWidth = optionCount <= 3 ? 150 : optionCount <= 5 ? 125 : 80;
@@ -153,7 +264,7 @@ export function VotePage() {
               </p>
             )}
 
-            {poll.expiresAt && (
+            {expiresAtDate && (
               <p
                 style={{
                   marginTop: "12px",
@@ -162,8 +273,8 @@ export function VotePage() {
                   fontSize: "0.9rem",
                 }}
               >
-                Laufzeit bis{" "}
-                {new Date(poll.expiresAt).toLocaleDateString("de-DE")}
+                Laufzeit bis {dateTimeFormat.format(expiresAtDate)}{" "}
+                {!isExpired && `· noch ${remainingTime}`}
               </p>
             )}
           </div>
@@ -331,14 +442,40 @@ export function VotePage() {
               color: "#222",
             }}
           >
-            {isExpired ? (
+            {hasJustVoted ? (
+              <div style={{ textAlign: "center" }}>
+                <h3 style={{ marginTop: 0 }}>
+                  Vielen Dank für deine Stimme!
+                </h3>
+                <p style={{ marginBottom: 0 }}>
+                  Das Ergebnis wurde aktualisiert.
+                </p>
+              </div>
+            ) : hasVoted ? (
+              <div style={{ textAlign: "center" }}>
+                <h3 style={{ marginTop: 0 }}>
+                  Du hast deine Stimme bereits abgegeben.
+                </h3>
+                <p style={{ marginBottom: 0 }}>Vielen Dank.</p>
+                {import.meta.env.DEV && (
+                  <button
+                    type="button"
+                    onClick={handleResetLocalVoteForTesting}
+                    className="vl-button vl-button-secondary"
+                    style={{ marginTop: "16px" }}
+                  >
+                    Teststimme in diesem Browser zurücksetzen
+                  </button>
+                )}
+              </div>
+            ) : isExpired ? (
               <div style={{ textAlign: "center" }}>
                 <h3 style={{ marginTop: 0 }}>Diese Abstimmung ist beendet.</h3>
                 <p style={{ marginBottom: 0 }}>
                   Stimmen können nicht mehr abgegeben werden.
                 </p>
               </div>
-            ) : !hasVoted ? (
+            ) : (
               <>
                 <div style={{ textAlign: "center" }}>
                   <h3 style={{ marginTop: 0, marginBottom: "4px" }}>
@@ -398,24 +535,16 @@ export function VotePage() {
                       return (
                         <label
                           key={option.id}
+                          className={`vl-button-pill ${
+                            isSelected ? "vl-button-pill-selected" : ""
+                          }`}
                           style={{
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             gap: "6px",
-                            padding: "9px 16px",
-                            minWidth: "120px",
-                            border: isSelected
-                              ? "1px solid #15803d"
-                              : "1px solid #ccc",
-                            borderRadius: "999px",
-                            background: isSelected ? "#16a34a" : "#fff",
-                            color: isSelected ? "#fff" : "#222",
-                            cursor: "pointer",
+                            minWidth: "88px",
                             maxWidth: "100%",
-                            fontSize: "0.9rem",
-                            lineHeight: "1.2",
-                            fontWeight: isSelected ? "700" : "400",
                             transition:
                               "background 160ms ease, color 160ms ease, border 160ms ease",
                           }}
@@ -456,34 +585,14 @@ export function VotePage() {
                     <button
                       type="submit"
                       disabled={isVoting}
-                      style={{
-                        marginTop: "26px",
-                        padding: "14px 32px",
-                        minWidth: "170px",
-                        borderRadius: "999px",
-                        border: "none",
-                        background: "#333",
-                        color: "#fff",
-                        cursor: isVoting ? "not-allowed" : "pointer",
-                        fontWeight: "700",
-                        fontSize: "1.05rem",
-                        lineHeight: "1.2",
-                      }}
+                      className="vl-button vl-button-large"
+                      style={{ marginTop: "26px" }}
                     >
                       {isVoting ? "Stimme wird gespeichert..." : "Abstimmen"}
                     </button>
                   </div>
                 </form>
               </>
-            ) : (
-              <div style={{ textAlign: "center" }}>
-                <h3 style={{ marginTop: 0 }}>
-                  Vielen Dank für deine Stimme!
-                </h3>
-                <p style={{ marginBottom: 0 }}>
-                  Das Ergebnis wurde aktualisiert.
-                </p>
-              </div>
             )}
 
             {error && (
@@ -564,6 +673,10 @@ export function VotePage() {
                 Bei Rückfragen wenden Sie sich an:{" "}
                 <a href={`mailto:${poll.creatorEmail}`}>{poll.creatorEmail}</a>
               </p>
+              <p>
+                Diese Abstimmung speichert einen anonymen Teilnahme-Token in
+                diesem Browser, um Mehrfachabstimmungen zu erschweren.
+              </p>
             </div>
 
             <div
@@ -577,15 +690,7 @@ export function VotePage() {
               <button
                 type="button"
                 onClick={() => setIsInfoOpen(false)}
-                style={{
-                  padding: "10px 18px",
-                  borderRadius: "999px",
-                  border: "none",
-                  background: "#333",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontWeight: "700",
-                }}
+                className="vl-button"
               >
                 Schließen
               </button>

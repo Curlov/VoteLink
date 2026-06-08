@@ -103,6 +103,62 @@ Bisheriger Fokus:
 - Überlegungen zu Sharing, Einbettung und Monetarisierung
 - Vorbereitung für eine strukturierte Weiterentwicklung über Git und Codex
 
+## Entwicklung
+
+Backend starten:
+
+```bash
+cd backend
+npm install
+npm run migrate
+npm start
+```
+
+Frontend starten:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Die Backend-Konfiguration liegt in `backend/.env`. Eine Vorlage gibt es in
+`backend/.env.example`. Die Frontend-API-URL kann über
+`frontend/.env` gesetzt werden:
+
+```bash
+VITE_API_BASE_URL=http://localhost:3000/api
+```
+
+Wenn SMTP konfiguriert ist, sendet das Backend dem Ersteller nach dem Anlegen
+einer Abstimmung eine E-Mail mit öffentlichem Link und Admin-Link:
+
+```bash
+PUBLIC_APP_URL=https://example.com
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=...
+SMTP_PASSWORD=...
+MAIL_FROM=VoteLink <no-reply@example.com>
+```
+
+Migrationen aktualisieren die Datenbankstruktur reproduzierbar:
+
+```bash
+cd backend
+npm run migrate
+```
+
+Abgelaufene Free-Umfragen können nach der Aufbewahrungsfrist gelöscht werden:
+
+```bash
+cd backend
+npm run cleanup:expired
+```
+
+Die Frist wird über `FREE_POLL_RETENTION_DAYS` gesteuert und beträgt standardmäßig
+14 Tage nach Ablauf der Umfrage.
+
 ## Aktuelle Design-Idee
 
 Die Ergebnisdarstellung soll nicht wie ein trockenes Standarddiagramm wirken, sondern modern, klar und visuell ansprechend sein.

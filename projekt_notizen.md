@@ -174,3 +174,41 @@ nodemon: startet den Server bei Änderungen automatisch neu
     - einfacher Ablauf
     - jeder Einladungslink kann nur einmal abstimmen
     - bessere Manipulationssicherheit als offene Link-Abstimmungen
+
+
+
+## Für morgen
+
+Für morgen würde ich so weitermachen:
+
+  1. Kurzer UI-Durchgang
+     Einmal die wichtigsten Flows prüfen:
+      - Umfrage erstellen
+      - Mail erhalten
+      - abstimmen
+      - erneutes Öffnen nach Abstimmung
+      - Adminbereich: Ergebnisse, Bearbeiten, Laufzeit, Löschen
+
+  2. Feinschliff Mail
+     Die Mail selbst schöner und klarer machen:
+      - Betreff
+      - Textstruktur
+      - öffentlicher Link vs. Admin-Link deutlicher trennen
+      - Hinweis: Admin-Link nicht weitergeben
+
+  3. Produktions-/Deployment-Vorbereitung
+     Das wäre aus meiner Sicht der nächste große Block:
+      - .env final prüfen
+      - PUBLIC_APP_URL sauber setzen
+      - CORS nicht mehr komplett offen
+      - Build-/Start-Anleitung
+      - ggf. erste Deployment-Variante besprechen
+
+  4. Datenschutz-/Transparenztext
+     Nicht juristisch final, aber als Produkttext:
+      - Teilnahme-Token im Browser
+      - automatische Löschung nach Ablauf + Frist
+      - Kontaktadresse des Erstellers
+
+  5. Git-Stand sichern
+     Wenn du willst, sollten wir morgen auch einen sauberen Commit machen. Es ist einiges zusammengekommen.

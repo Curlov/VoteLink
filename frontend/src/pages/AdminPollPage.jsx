@@ -1,13 +1,31 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getAdminPoll } from "../api/pollsApi";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  closeAdminPoll,
+  deleteAdminPoll,
+  extendAdminPoll,
+  getAdminPoll,
+  updateAdminPoll,
+} from "../api/pollsApi";
 
 export function AdminPollPage() {
   const { adminToken } = useParams();
+  const navigate = useNavigate();
+  const copyResetTimeoutRef = useRef(null);
 
   const [poll, setPoll] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [adminMessage, setAdminMessage] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [extensionDays, setExtensionDays] = useState(7);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isExtending, setIsExtending] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState("results");
+  const [isPublicLinkCopied, setIsPublicLinkCopied] = useState(false);
 
   useEffect(() => {
     async function loadAdminPoll() {
@@ -17,6 +35,8 @@ export function AdminPollPage() {
 
         const response = await getAdminPoll(adminToken);
         setPoll(response.poll);
+        setEditTitle(response.poll.title);
+        setEditDescription(response.poll.description || "");
       } catch (err) {
         setError(err.message);
       } finally {
@@ -27,6 +47,110 @@ export function AdminPollPage() {
     loadAdminPoll();
   }, [adminToken]);
 
+  useEffect(() => {
+    return () => {
+      if (copyResetTimeoutRef.current) {
+        window.clearTimeout(copyResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  async function handleUpdatePoll(event) {
+    event.preventDefault();
+
+    try {
+      setError("");
+      setAdminMessage("");
+      setIsSaving(true);
+
+      const response = await updateAdminPoll(adminToken, {
+        title: editTitle,
+        description: editDescription,
+      });
+
+      setPoll(response.poll);
+      setEditTitle(response.poll.title);
+      setEditDescription(response.poll.description || "");
+      setAdminMessage(response.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleClosePoll() {
+    try {
+      setError("");
+      setAdminMessage("");
+      setIsClosing(true);
+
+      const response = await closeAdminPoll(adminToken);
+
+      setPoll(response.poll);
+      setAdminMessage(response.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsClosing(false);
+    }
+  }
+
+  async function handleExtendPoll() {
+    try {
+      setError("");
+      setAdminMessage("");
+      setIsExtending(true);
+
+      const response = await extendAdminPoll(adminToken, extensionDays);
+
+      setPoll(response.poll);
+      setAdminMessage(response.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsExtending(false);
+    }
+  }
+
+  async function handleDeletePoll() {
+    if (
+      !window.confirm(
+        "Diese Abstimmung und alle Stimmen dauerhaft löschen?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setError("");
+      setAdminMessage("");
+      setIsDeleting(true);
+
+      await deleteAdminPoll(adminToken);
+      navigate("/");
+    } catch (err) {
+      setError(err.message);
+      setIsDeleting(false);
+    }
+  }
+
+  async function handleCopyLink(url) {
+    try {
+      setError("");
+      await navigator.clipboard.writeText(url);
+      setIsPublicLinkCopied(true);
+      if (copyResetTimeoutRef.current) {
+        window.clearTimeout(copyResetTimeoutRef.current);
+      }
+      copyResetTimeoutRef.current = window.setTimeout(() => {
+        setIsPublicLinkCopied(false);
+      }, 2000);
+    } catch {
+      setError("Der Link konnte nicht kopiert werden.");
+    }
+  }
+
   if (isLoading) {
     return (
       <main>
@@ -35,7 +159,7 @@ export function AdminPollPage() {
     );
   }
 
-  if (error) {
+  if (error && !poll) {
     return (
       <main>
         <h1>VoteLink</h1>
@@ -45,11 +169,37 @@ export function AdminPollPage() {
   }
 
   const publicUrl = `${window.location.origin}/p/${poll.publicId}`;
+  const adminUrl = `${window.location.origin}/admin/${adminToken}`;
   const isExpired = poll.expiresAt && new Date(poll.expiresAt) <= new Date();
   const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
     dateStyle: "medium",
     timeStyle: "short",
   });
+  const inputStyle = {
+    width: "100%",
+    boxSizing: "border-box",
+    marginTop: "6px",
+    padding: "10px 14px",
+    borderRadius: "12px",
+    border: "1px solid #ccc",
+    background: "#fff",
+    color: "#222",
+    font: "inherit",
+  };
+  const inlineCopyButtonStyle = {
+    marginLeft: "10px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "4px",
+    verticalAlign: "baseline",
+  };
+  const tabs = [
+    { id: "results", label: "Ergebnisse" },
+    { id: "edit", label: "Bearbeiten" },
+    { id: "runtime", label: "Laufzeit" },
+    { id: "danger", label: "Löschen" },
+  ];
 
   return (
     <main>
@@ -153,9 +303,210 @@ export function AdminPollPage() {
             <p>
               Öffentlicher Link:{" "}
               <a href={`/p/${poll.publicId}`}>{publicUrl}</a>
+              <button
+                type="button"
+                onClick={() => handleCopyLink(publicUrl)}
+                className="vl-button vl-button-secondary vl-button-small"
+                style={{
+                  ...inlineCopyButtonStyle,
+                  borderColor: isPublicLinkCopied ? "#15803d" : "#ccc",
+                }}
+              >
+                Kopieren
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: "16px",
+                    color: "#15803d",
+                    opacity: isPublicLinkCopied ? 1 : 0,
+                    fontWeight: "900",
+                    fontSize: "1rem",
+                    lineHeight: "1",
+                  }}
+                >
+                  ✓
+                </span>
+              </button>
             </p>
+            <p>
+              Admin-Link:{" "}
+              <a href={`/admin/${adminToken}`}>{adminUrl}</a>
+              <br />
+              <span style={{ color: "#777", fontSize: "0.88rem" }}>
+                Verwaltungslink nur für den Ersteller.
+              </span>
+            </p>
+            {adminMessage && (
+              <p style={{ color: "#15803d", fontWeight: "700" }}>
+                {adminMessage}
+              </p>
+            )}
+            {error && (
+              <p style={{ color: "#991b1b", fontWeight: "700" }}>
+                Fehler: {error}
+              </p>
+            )}
           </div>
 
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              paddingTop: "14px",
+              borderTop: "1px solid #ddd",
+            }}
+          >
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`vl-button ${
+                    isActive ? "" : "vl-button-secondary"
+                  }`}
+                  style={{
+                    padding: "9px 14px",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {activeTab === "edit" && (
+          <form
+            onSubmit={handleUpdatePoll}
+            style={{
+              display: "grid",
+              gap: "12px",
+            }}
+          >
+            <h3 style={{ margin: 0, color: "#222" }}>Abstimmung bearbeiten</h3>
+            <label style={{ color: "#333", fontWeight: "700" }}>
+              Titel
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(event) => setEditTitle(event.target.value)}
+                style={inputStyle}
+              />
+            </label>
+            <label style={{ color: "#333", fontWeight: "700" }}>
+              Beschreibung
+              <textarea
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+                style={{
+                  ...inputStyle,
+                  minHeight: "92px",
+                  resize: "vertical",
+                  lineHeight: "1.5",
+                }}
+              />
+            </label>
+            <div>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="vl-button"
+                style={{
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                }}
+              >
+                {isSaving ? "Speichern..." : "Speichern"}
+              </button>
+            </div>
+          </form>
+          )}
+
+          {activeTab === "runtime" && (
+          <div
+            style={{
+              display: "grid",
+              gap: "14px",
+            }}
+          >
+            <h3 style={{ margin: 0, color: "#222" }}>Laufzeit verwalten</h3>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "10px",
+                alignItems: "center",
+              }}
+            >
+              <select
+                value={extensionDays}
+                onChange={(event) => setExtensionDays(Number(event.target.value))}
+                style={{
+                  ...inputStyle,
+                  width: "auto",
+                  marginTop: 0,
+                }}
+              >
+                <option value={1}>1 Tag</option>
+                <option value={7}>7 Tage</option>
+                <option value={14}>14 Tage</option>
+                <option value={28}>28 Tage</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleExtendPoll}
+                disabled={isExtending}
+                className="vl-button vl-button-secondary"
+                style={{
+                  cursor: isExtending ? "not-allowed" : "pointer",
+                }}
+              >
+                {isExtending ? "Verlängern..." : "Verlängern"}
+              </button>
+              <button
+                type="button"
+                onClick={handleClosePoll}
+                disabled={isClosing || isExpired}
+                className="vl-button vl-button-secondary"
+                style={{
+                  cursor: isClosing || isExpired ? "not-allowed" : "pointer",
+                  opacity: isExpired ? 0.6 : 1,
+                }}
+              >
+                {isClosing ? "Schließen..." : "Jetzt schließen"}
+              </button>
+            </div>
+          </div>
+          )}
+
+          {activeTab === "danger" && (
+          <div
+            style={{
+              display: "grid",
+              gap: "12px",
+            }}
+          >
+            <h3 style={{ marginTop: 0, color: "#7f1d1d" }}>
+              Abstimmung löschen
+            </h3>
+            <button
+              type="button"
+              onClick={handleDeletePoll}
+              disabled={isDeleting}
+              className="vl-button vl-button-danger"
+              style={{
+                cursor: isDeleting ? "not-allowed" : "pointer",
+              }}
+            >
+              {isDeleting ? "Löschen..." : "Dauerhaft löschen"}
+            </button>
+          </div>
+          )}
+
+          {activeTab === "results" && (
+            <>
           <div
             style={{
               display: "flex",
@@ -222,6 +573,8 @@ export function AdminPollPage() {
               </div>
             ))}
           </div>
+            </>
+          )}
         </div>
       </section>
     </main>

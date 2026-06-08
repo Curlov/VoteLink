@@ -79,29 +79,6 @@ export function CreatePollPage() {
     marginBottom: "4px",
   };
 
-  const secondaryButtonStyle = {
-    padding: "10px 18px",
-    borderRadius: "999px",
-    border: "1px solid #ccc",
-    background: "#fff",
-    color: "#222",
-    cursor: "pointer",
-    fontWeight: "700",
-  };
-
-  const primaryButtonStyle = {
-    padding: "14px 32px",
-    minWidth: "210px",
-    borderRadius: "999px",
-    border: "none",
-    background: "#333",
-    color: "#fff",
-    cursor: isLoading ? "not-allowed" : "pointer",
-    fontWeight: "700",
-    fontSize: "1.05rem",
-    lineHeight: "1.2",
-  };
-
   return (
     <main>
       <h1 style={{ textAlign: "center" }}>VoteLink</h1>
@@ -163,9 +140,24 @@ export function CreatePollPage() {
                 Laufzeit bis
               </p>
               <strong>
-                {new Date(result.poll.expiresAt).toLocaleDateString("de-DE")}
+                {new Intl.DateTimeFormat("de-DE", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(new Date(result.poll.expiresAt))}
               </strong>
             </div>
+
+            {result.emailDelivery?.sent && (
+              <p style={{ color: "#15803d", margin: 0 }}>
+                Die Links wurden an {result.poll.creatorEmail} gesendet.
+              </p>
+            )}
+
+            {result.emailDelivery?.skipped && (
+              <p style={{ color: "#777", margin: 0 }}>
+                Der E-Mail-Versand ist lokal nicht konfiguriert.
+              </p>
+            )}
 
             <div>
               <p style={{ color: "#555", marginBottom: "4px" }}>
@@ -354,11 +346,9 @@ export function CreatePollPage() {
                         type="button"
                         onClick={() => removeOption(index)}
                         disabled={options.length <= 2}
+                        className="vl-button vl-button-secondary"
                         style={{
-                          ...secondaryButtonStyle,
                           opacity: options.length <= 2 ? 0.45 : 1,
-                          cursor:
-                            options.length <= 2 ? "not-allowed" : "pointer",
                         }}
                       >
                         Entfernen
@@ -370,8 +360,8 @@ export function CreatePollPage() {
                 <button
                   type="button"
                   onClick={addOption}
+                  className="vl-button vl-button-secondary"
                   style={{
-                    ...secondaryButtonStyle,
                     marginTop: "14px",
                   }}
                 >
@@ -393,7 +383,7 @@ export function CreatePollPage() {
                 type="submit"
                 form="create-poll-form"
                 disabled={isLoading}
-                style={primaryButtonStyle}
+                className="vl-button vl-button-large"
               >
                 {isLoading ? "Wird erstellt..." : "Abstimmung erstellen"}
               </button>
