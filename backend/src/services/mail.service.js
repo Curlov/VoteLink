@@ -11,6 +11,9 @@ function getTransporter() {
     host: process.env.SMTP_HOST,
     port,
     secure: port === 465,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 8000,
     auth:
       process.env.SMTP_USER && process.env.SMTP_PASSWORD
         ? {
@@ -29,7 +32,93 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-export async function sendPollCreatedEmail({ to, title, publicUrl, adminUrl }) {
+function formatDateTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("de-DE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function normalizeHeaderText(value) {
+  return String(value).replace(/[\r\n]+/g, " ").trim();
+}
+
+export function buildPollCreatedEmail({
+  title,
+  publicUrl,
+  adminUrl,
+  expiresAt,
+}) {
+  const normalizedTitle = normalizeHeaderText(title);
+  const safeTitle = escapeHtml(normalizedTitle);
+  const safePublicUrl = escapeHtml(publicUrl);
+  const safeAdminUrl = escapeHtml(adminUrl);
+  const formattedExpiresAt = formatDateTime(expiresAt);
+  const safeFormattedExpiresAt = escapeHtml(formattedExpiresAt);
+
+  return {
+    subject: `VoteLink: Deine Abstimmung "${normalizedTitle}" ist bereit`,
+    text: [
+      `Deine Abstimmung "${normalizedTitle}" wurde erstellt.`,
+      ...(formattedExpiresAt ? [`Laufzeit bis: ${formattedExpiresAt}`] : []),
+      "",
+      "Teilnehmer-Link",
+      "Diesen Link kannst du an Teilnehmer weitergeben:",
+      publicUrl,
+      "",
+      "Admin-Link",
+      "Nur für dich als Ersteller bestimmt:",
+      adminUrl,
+      "",
+      "Wichtig: Gib den Admin-Link nicht weiter. Mit ihm kann die Abstimmung verwaltet, geschlossen oder dauerhaft gelöscht werden.",
+      "",
+      "Hinweis: Teilnehmer sehen über den öffentlichen Link die Abstimmung und das aktuelle Zwischenergebnis.",
+    ].join("\n"),
+    html: `
+      <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #222; line-height: 1.5;">
+        <h1 style="font-size: 22px; margin: 0 0 12px;">Deine Abstimmung ist bereit</h1>
+        <p style="margin: 0 0 18px;">
+          <strong>${safeTitle}</strong> wurde erstellt.${
+            safeFormattedExpiresAt
+              ? ` Laufzeit bis <strong>${safeFormattedExpiresAt}</strong>.`
+              : ""
+          }
+        </p>
+
+        <div style="padding: 16px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 14px; background: #f7f7f7;">
+          <p style="margin: 0 0 6px; font-weight: 700;">Teilnehmer-Link</p>
+          <p style="margin: 0 0 10px; color: #555;">Diesen Link kannst du an Teilnehmer weitergeben.</p>
+          <a href="${safePublicUrl}" style="color: #1d4ed8; word-break: break-word;">${safePublicUrl}</a>
+        </div>
+
+        <div style="padding: 16px; border: 1px solid #f3c7c7; border-radius: 8px; background: #fff7f7; margin-bottom: 14px;">
+          <p style="margin: 0 0 6px; font-weight: 700; color: #7f1d1d;">Admin-Link</p>
+          <p style="margin: 0 0 10px; color: #7f1d1d;">Nur für dich. Nicht weitergeben.</p>
+          <a href="${safeAdminUrl}" style="color: #991b1b; word-break: break-word;">${safeAdminUrl}</a>
+          <p style="margin: 10px 0 0; color: #7f1d1d;">
+            Mit diesem Link kann die Abstimmung verwaltet, geschlossen oder dauerhaft gelöscht werden.
+          </p>
+        </div>
+
+        <p style="margin: 0; color: #555;">
+          Teilnehmer sehen über den öffentlichen Link die Abstimmung und das aktuelle Zwischenergebnis.
+        </p>
+      </div>
+    `,
+  };
+}
+
+export async function sendPollCreatedEmail({
+  to,
+  title,
+  publicUrl,
+  adminUrl,
+  expiresAt,
+}) {
   if (!isMailConfigured()) {
     console.info(
       "E-Mail-Versand übersprungen: SMTP_HOST oder MAIL_FROM fehlt."
@@ -40,34 +129,19 @@ export async function sendPollCreatedEmail({ to, title, publicUrl, adminUrl }) {
   }
 
   const transporter = getTransporter();
-  const safeTitle = escapeHtml(title);
-  const safePublicUrl = escapeHtml(publicUrl);
-  const safeAdminUrl = escapeHtml(adminUrl);
+  const email = buildPollCreatedEmail({
+    title,
+    publicUrl,
+    adminUrl,
+    expiresAt,
+  });
 
   await transporter.sendMail({
     from: process.env.MAIL_FROM,
     to,
-    subject: `VoteLink: Deine Abstimmung "${title}"`,
-    text: [
-      `Deine Abstimmung "${title}" wurde erstellt.`,
-      "",
-      `Öffentlicher Link: ${publicUrl}`,
-      `Admin-Link: ${adminUrl}`,
-      "",
-      "Bewahre den Admin-Link gut auf. Über ihn kannst du die Abstimmung verwalten.",
-    ].join("\n"),
-    html: `
-      <p>Deine Abstimmung <strong>${safeTitle}</strong> wurde erstellt.</p>
-      <p>
-        Öffentlicher Link:<br>
-        <a href="${safePublicUrl}">${safePublicUrl}</a>
-      </p>
-      <p>
-        Admin-Link:<br>
-        <a href="${safeAdminUrl}">${safeAdminUrl}</a>
-      </p>
-      <p>Bewahre den Admin-Link gut auf. Über ihn kannst du die Abstimmung verwalten.</p>
-    `,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
   });
 
   return {

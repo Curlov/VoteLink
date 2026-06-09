@@ -7,6 +7,7 @@ import {
   getAdminPoll,
   updateAdminPoll,
 } from "../api/pollsApi";
+import { LegalInfo } from "../components/LegalInfo";
 
 export function AdminPollPage() {
   const { adminToken } = useParams();
@@ -162,7 +163,6 @@ export function AdminPollPage() {
   if (error && !poll) {
     return (
       <main>
-        <h1>VoteLink</h1>
         <p style={{ color: "red" }}>Fehler: {error}</p>
       </main>
     );
@@ -203,8 +203,6 @@ export function AdminPollPage() {
 
   return (
     <main>
-      <h1 style={{ textAlign: "center" }}>VoteLink</h1>
-
       <section
         style={{
           maxWidth: "820px",
@@ -220,6 +218,7 @@ export function AdminPollPage() {
       >
         <div
           style={{
+            position: "relative",
             padding: "28px 36px",
             background: "#f3f3f3",
             borderBottom: "1px solid #ddd",
@@ -236,16 +235,27 @@ export function AdminPollPage() {
           >
             Adminbereich
           </p>
-          <h2
+          <div
             style={{
-              margin: 0,
-              color: "#222",
-              fontSize: "2rem",
-              lineHeight: "1.15",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "16px",
             }}
           >
-            {poll.title}
-          </h2>
+            <h2
+              style={{
+                margin: 0,
+                flex: "1 1 280px",
+                color: "#222",
+                fontSize: "2rem",
+                lineHeight: "1.15",
+              }}
+            >
+              {poll.title}
+            </h2>
+          </div>
           {poll.description && (
             <p
               style={{
@@ -257,6 +267,15 @@ export function AdminPollPage() {
               {poll.description}
             </p>
           )}
+          <div
+            style={{
+              position: "absolute",
+              right: "36px",
+              bottom: "16px",
+            }}
+          >
+            <LegalInfo />
+          </div>
         </div>
 
         <div
@@ -333,8 +352,13 @@ export function AdminPollPage() {
               <a href={`/admin/${adminToken}`}>{adminUrl}</a>
               <br />
               <span style={{ color: "#777", fontSize: "0.88rem" }}>
-                Verwaltungslink nur für den Ersteller.
+                Verwaltungslink nur für den Ersteller. Nicht weitergeben.
               </span>
+            </p>
+            <p style={{ color: "#777", fontSize: "0.9rem", lineHeight: "1.45" }}>
+              Abgelaufene Free-Abstimmungen werden nach der konfigurierten
+              Aufbewahrungsfrist automatisch gelöscht. Sofortiges Löschen ist
+              jederzeit über den Tab "Löschen" möglich.
             </p>
             {adminMessage && (
               <p style={{ color: "#15803d", fontWeight: "700" }}>
@@ -516,12 +540,15 @@ export function AdminPollPage() {
             }}
           >
             <strong>
-              {poll.allowMultipleVotes
-                ? `Teilnehmer: ${poll.totalVoters}`
-                : `Stimmen: ${poll.totalVotes}`}
+              Teilnehmer: {poll.totalVoters}/{poll.maxVoters}
             </strong>
             {poll.allowMultipleVotes && (
               <strong>Auswahlen: {poll.totalVotes}</strong>
+            )}
+            {poll.isParticipantLimitReached && (
+              <strong style={{ color: "#991b1b" }}>
+                Teilnehmerlimit erreicht
+              </strong>
             )}
           </div>
 
@@ -575,6 +602,7 @@ export function AdminPollPage() {
           </div>
             </>
           )}
+
         </div>
       </section>
     </main>

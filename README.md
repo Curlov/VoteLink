@@ -134,12 +134,31 @@ Wenn SMTP konfiguriert ist, sendet das Backend dem Ersteller nach dem Anlegen
 einer Abstimmung eine E-Mail mit öffentlichem Link und Admin-Link:
 
 ```bash
+NODE_ENV=production
 PUBLIC_APP_URL=https://example.com
+CORS_ORIGIN=https://example.com
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=...
 SMTP_PASSWORD=...
 MAIL_FROM=VoteLink <no-reply@example.com>
+```
+
+`PUBLIC_APP_URL` muss in Produktion auf die öffentliche Frontend-URL zeigen,
+damit E-Mails absolute Links enthalten. `CORS_ORIGIN` sollte in Produktion auf
+die erlaubte Frontend-Origin eingeschränkt werden, z. B.
+`https://example.com`. In `NODE_ENV=production` startet das Backend ohne
+gesetztes `CORS_ORIGIN` nicht. Ohne `CORS_ORIGIN` bleibt CORS nur für lokale
+Entwicklung offen.
+
+Das Frontend zeigt Impressum und Datenschutzhinweise als überlagernde Fenster
+an. Die Betreiberangaben werden über Frontend-Umgebungsvariablen gesetzt:
+
+```bash
+VITE_LEGAL_OPERATOR_NAME="VoteLink Betreiber"
+VITE_LEGAL_OPERATOR_ADDRESS="Straße Hausnummer, PLZ Ort"
+VITE_LEGAL_OPERATOR_EMAIL=kontakt@example.com
+VITE_LEGAL_RETENTION_DAYS=14
 ```
 
 Migrationen aktualisieren die Datenbankstruktur reproduzierbar:
@@ -149,7 +168,7 @@ cd backend
 npm run migrate
 ```
 
-Abgelaufene Free-Umfragen können nach der Aufbewahrungsfrist gelöscht werden:
+Abgelaufene Free-Umfragen werden nach der Aufbewahrungsfrist gelöscht:
 
 ```bash
 cd backend
@@ -158,6 +177,65 @@ npm run cleanup:expired
 
 Die Frist wird über `FREE_POLL_RETENTION_DAYS` gesteuert und beträgt standardmäßig
 14 Tage nach Ablauf der Umfrage.
+
+### Produktionsgrundlage
+
+Ein minimaler Produktionsablauf sieht aktuell so aus:
+
+```bash
+cd backend
+npm ci
+npm run migrate
+npm start
+
+cd ../frontend
+npm ci
+npm run build
+```
+
+Das Frontend-Build-Ergebnis liegt in `frontend/dist` und kann statisch
+ausgeliefert werden. `VITE_API_BASE_URL` muss dabei auf die erreichbare
+Backend-API zeigen, z. B. `https://api.example.com/api` oder bei gleicher
+Domain `/api`.
+
+Aktuelle Free-Limits:
+
+- maximal 6 Optionen pro Abstimmung
+- maximal 20 Teilnehmer pro Abstimmung
+- automatische Löschung 14 Tage nach Ablauf, gesteuert über
+  `FREE_POLL_RETENTION_DAYS`
+
+Vor einem echten Deployment sollten diese Punkte final geprüft werden:
+
+- PostgreSQL-Datenbank, Migrationen und Backup-Strategie
+- `PUBLIC_APP_URL`, `CORS_ORIGIN` und `VITE_API_BASE_URL`
+- `HOST`/`PORT` passend zur Zielumgebung, lokal z. B. `127.0.0.1:3000`
+- echte Impressums- und Kontaktangaben über `VITE_LEGAL_*`
+- SMTP-Zugang und Absenderadresse
+- regelmäßiger Lauf von `npm run cleanup:expired`
+- HTTPS/TLS, Reverse Proxy und Prozessverwaltung
+
+### Datenschutz und Transparenz
+
+voteLink speichert beim Erstellen einer Abstimmung die E-Mail-Adresse des
+Erstellers sowie dessen Namen, Titel, Beschreibung, Optionen, Laufzeit und
+Teilnahmeeinstellungen. Die E-Mail-Adresse wird für die Zustellung von
+öffentlichem Link und Admin-Link sowie als Kontaktadresse für Rückfragen
+verwendet. Der Admin-Link ist ein geheimer Verwaltungslink und sollte nicht
+weitergegeben werden.
+
+Zur Erschwerung von Mehrfachabstimmungen erzeugt das Frontend pro Abstimmung
+einen zufälligen Teilnahme-Token im Browser. Auf dem Server wird nur ein Hash
+dieses Tokens gespeichert. Bei nicht anonymen Abstimmungen wird zusätzlich der
+vom Teilnehmer eingegebene Name gespeichert und im Adminbereich angezeigt.
+
+Die Free-Version begrenzt Abstimmungen aktuell auf maximal 6 Optionen und 20
+Teilnehmer. Wird das Teilnehmerlimit erreicht, bleibt die Abstimmung sichtbar,
+nimmt aber keine weiteren Antworten mehr entgegen.
+
+Abgelaufene Free-Abstimmungen werden nach der konfigurierten Aufbewahrungsfrist
+gelöscht. Dieser Abschnitt ist ein Produkt- und Transparenztext, keine
+finale juristische Datenschutzerklärung.
 
 ## Aktuelle Design-Idee
 

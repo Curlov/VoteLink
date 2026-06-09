@@ -60,6 +60,7 @@ export async function createPollController(req, res) {
         title: poll.title,
         publicUrl,
         adminUrl,
+        expiresAt: poll.expires_at,
       });
 
       emailDelivery = {

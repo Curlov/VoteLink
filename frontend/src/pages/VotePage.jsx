@@ -6,6 +6,9 @@ import {
   vote,
   getPollResults,
 } from "../api/pollsApi";
+import { LegalInfo } from "../components/LegalInfo";
+
+const COMPACT_RESULT_OPTION_THRESHOLD = 10;
 
 function createFallbackToken() {
   const bytes = new Uint8Array(24);
@@ -152,6 +155,18 @@ export function VotePage() {
       setHasJustVoted(true);
       setSelectedOptionIds([]);
     } catch (err) {
+      if (err.message.includes("Teilnehmerlimit")) {
+        try {
+          const resultsResponse = await getPollResults(publicId);
+          setResults(resultsResponse.results);
+          setSelectedOptionIds([]);
+          setError("");
+          return;
+        } catch {
+          // Keep the original vote error if refreshing the results fails.
+        }
+      }
+
       setError(err.message);
     } finally {
       setIsVoting(false);
@@ -195,7 +210,6 @@ export function VotePage() {
   if (error && !poll) {
     return (
       <main>
-        <h1>VoteLink</h1>
         <p style={{ color: "red" }}>Fehler: {error}</p>
       </main>
     );
@@ -211,6 +225,11 @@ export function VotePage() {
   const remainingTime = expiresAtDate
     ? formatRemainingTime(expiresAtDate, now)
     : "";
+  const isParticipantLimitReached = Boolean(
+    results?.isParticipantLimitReached
+  );
+  const shouldUseCompactResults =
+    optionCount > COMPACT_RESULT_OPTION_THRESHOLD;
 
   const barWidth = optionCount <= 3 ? 72 : optionCount <= 5 ? 58 : 44;
   const optionWidth = optionCount <= 3 ? 150 : optionCount <= 5 ? 125 : 80;
@@ -218,8 +237,6 @@ export function VotePage() {
 
   return (
     <main>
-      <h1 style={{ textAlign: "center" }}>VoteLink</h1>
-
       {results && (
         <section
           style={{
@@ -234,22 +251,34 @@ export function VotePage() {
         >
           <div
             style={{
+              position: "relative",
               padding: "28px 36px",
               background: "#f3f3f3", 
               borderBottom: "1px solid #ddd",
               color: "#222",
             }}
           >
-            <h2
+            <div
               style={{
-                margin: 0,
-                color: "#222",
-                fontSize: "2rem",
-                lineHeight: "1.15",
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "16px",
               }}
             >
-              {results.title}
-            </h2>
+              <h2
+                style={{
+                  margin: 0,
+                  flex: "1 1 280px",
+                  color: "#222",
+                  fontSize: "2rem",
+                  lineHeight: "1.15",
+                }}
+              >
+                {results.title}
+              </h2>
+            </div>
 
             {results.description && (
               <p
@@ -277,6 +306,15 @@ export function VotePage() {
                 {!isExpired && `· noch ${remainingTime}`}
               </p>
             )}
+            <div
+              style={{
+                position: "absolute",
+                right: "36px",
+                bottom: "16px",
+              }}
+            >
+              <LegalInfo />
+            </div>
           </div>
 
           <div
@@ -301,105 +339,152 @@ export function VotePage() {
               }}
             >
               {results.allowMultipleVotes
-                ? `Teilnehmer: ${results.totalVoters} · Auswahlen: ${results.totalVotes}`
-                : `Stimmen: ${results.totalVotes}`}
+                ? `Teilnehmer: ${results.totalVoters}/${results.maxVoters} · Auswahlen: ${results.totalVotes}`
+                : `Teilnehmer: ${results.totalVoters}/${results.maxVoters}`}
             </p>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                overflowX: "auto",
-                marginTop: "32px",
-                paddingBottom: "8px",
-              }}
-            >
+            {shouldUseCompactResults ? (
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: `${chartGap}px`,
-                  paddingLeft: `${chartGap}px`,
-                  paddingRight: `${chartGap}px`,
-                  backgroundImage: "linear-gradient(#333, #333)",
-                  backgroundRepeat: "no-repeat",
-                  backgroundSize: "100% 2px",
-                  backgroundPosition: "left 220px",
+                  display: "grid",
+                  gap: "12px",
+                  marginTop: "28px",
                 }}
               >
-                {results.options.map((option) => {
-                  const barHeight =
-                    results.totalVotes === 0 ? 0 : option.percentage * 2.2;
-
-                  return (
+                {results.options.map((option) => (
+                  <div key={option.id}>
                     <div
-                      key={option.id}
                       style={{
-                        width: `${optionWidth}px`,
                         display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        flexShrink: 0,
+                        justifyContent: "space-between",
+                        gap: "16px",
+                        marginBottom: "6px",
+                        fontSize: "0.95rem",
+                      }}
+                    >
+                      <span>{option.text}</span>
+                      <strong>
+                        {option.voteCount} · {option.percentage}%
+                      </strong>
+                    </div>
+                    <div
+                      style={{
+                        height: "10px",
+                        borderRadius: "999px",
+                        background: "#e5e5e5",
+                        overflow: "hidden",
                       }}
                     >
                       <div
                         style={{
-                          height: "220px",
-                          width: "100%",
+                          width: `${option.percentage}%`,
+                          height: "100%",
+                          background: "#333",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  overflowX: "auto",
+                  marginTop: "32px",
+                  paddingBottom: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: `${chartGap}px`,
+                    paddingLeft: `${chartGap}px`,
+                    paddingRight: `${chartGap}px`,
+                    backgroundImage: "linear-gradient(#333, #333)",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "100% 2px",
+                    backgroundPosition: "left 220px",
+                  }}
+                >
+                  {results.options.map((option) => {
+                    const barHeight =
+                      results.totalVotes === 0 ? 0 : option.percentage * 2.2;
+
+                    return (
+                      <div
+                        key={option.id}
+                        style={{
+                          width: `${optionWidth}px`,
                           display: "flex",
-                          alignItems: "end",
-                          justifyContent: "center",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          flexShrink: 0,
                         }}
                       >
                         <div
                           style={{
-                            width: `${barWidth}px`,
-                            height: `${barHeight}px`,
-                            background: "#333",
-                            transition: "height 300ms ease",
-                            borderRadius:
-                              barHeight > 0 ? "12px 12px 0 0" : "0",
+                            height: "220px",
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "end",
+                            justifyContent: "center",
                           }}
-                          title={`${option.voteCount} ${
-                            results.allowMultipleVotes ? "Auswahlen" : "Stimmen"
-                          } (${option.percentage}%)`}
-                        />
-                      </div>
+                        >
+                          <div
+                            style={{
+                              width: `${barWidth}px`,
+                              height: `${barHeight}px`,
+                              background: "#333",
+                              transition: "height 300ms ease",
+                              borderRadius:
+                                barHeight > 0 ? "12px 12px 0 0" : "0",
+                            }}
+                            title={`${option.voteCount} ${
+                              results.allowMultipleVotes
+                                ? "Auswahlen"
+                                : "Stimmen"
+                            } (${option.percentage}%)`}
+                          />
+                        </div>
 
-                      <div
-                        style={{
-                          width: `${barWidth}px`,
-                          height: "28px",
-                          background: "#333",
-                          color: "#fff",
-                          fontWeight: "700",
-                          fontSize: "0.85rem",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderRadius: "0 0 8px 8px",
-                        }}
-                      >
-                        {option.percentage}%
-                      </div>
+                        <div
+                          style={{
+                            width: `${barWidth}px`,
+                            height: "28px",
+                            background: "#333",
+                            color: "#fff",
+                            fontWeight: "700",
+                            fontSize: "0.85rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "0 0 8px 8px",
+                          }}
+                        >
+                          {option.percentage}%
+                        </div>
 
-                      <strong
-                        style={{
-                          width: `${optionWidth}px`,
-                          marginTop: "10px",
-                          textAlign: "center",
-                          minHeight: "40px",
-                          color: "#222",
-                          fontSize: "0.95rem",
-                        }}
-                      >
-                        {option.text}
-                      </strong>
-                    </div>
-                  );
-                })}
+                        <strong
+                          style={{
+                            width: `${optionWidth}px`,
+                            marginTop: "10px",
+                            textAlign: "center",
+                            minHeight: "40px",
+                            color: "#222",
+                            fontSize: "0.95rem",
+                          }}
+                        >
+                          {option.text}
+                        </strong>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {poll.creatorEmail && (
               <div
@@ -473,6 +558,16 @@ export function VotePage() {
                 <h3 style={{ marginTop: 0 }}>Diese Abstimmung ist beendet.</h3>
                 <p style={{ marginBottom: 0 }}>
                   Stimmen können nicht mehr abgegeben werden.
+                </p>
+              </div>
+            ) : isParticipantLimitReached ? (
+              <div style={{ textAlign: "center" }}>
+                <h3 style={{ marginTop: 0 }}>
+                  Das Teilnehmerlimit ist erreicht.
+                </h3>
+                <p style={{ marginBottom: 0 }}>
+                  Diese kostenlose Abstimmung nimmt keine weiteren Antworten
+                  entgegen.
                 </p>
               </div>
             ) : (
@@ -606,6 +701,7 @@ export function VotePage() {
                 Fehler: {error}
               </p>
             )}
+
           </div>
         </section>
       )}
@@ -664,18 +760,32 @@ export function VotePage() {
               }}
             >
               <p>
-                Initialisiert von:{" "}
+                Erstellt von:{" "}
                 <strong style={{ color: "#222" }}>
                   {poll.creatorName || "Nicht angegeben"}
                 </strong>
               </p>
               <p>
-                Bei Rückfragen wenden Sie sich an:{" "}
+                Kontakt für Rückfragen:{" "}
                 <a href={`mailto:${poll.creatorEmail}`}>{poll.creatorEmail}</a>
               </p>
               <p>
-                Diese Abstimmung speichert einen anonymen Teilnahme-Token in
-                diesem Browser, um Mehrfachabstimmungen zu erschweren.
+                VoteLink speichert in diesem Browser einen zufällig erzeugten
+                Teilnahme-Token. Auf dem Server wird nur ein Hash dieses Tokens
+                gespeichert, damit Mehrfachabstimmungen erschwert werden.
+              </p>
+              <p>
+                Diese kostenlose Abstimmung erlaubt bis zu {poll.maxVoters}
+                Teilnehmer. Danach nimmt sie keine weiteren Antworten entgegen.
+              </p>
+              <p>
+                {poll.isAnonymous
+                  ? "Diese Abstimmung ist anonym. Dein Name wird nicht abgefragt."
+                  : "Diese Abstimmung fragt deinen Namen ab. Der Ersteller kann die Namen im Adminbereich sehen."}
+              </p>
+              <p>
+                Nach Ablauf wird die Abstimmung nach der Aufbewahrungsfrist
+                automatisch gelöscht.
               </p>
             </div>
 

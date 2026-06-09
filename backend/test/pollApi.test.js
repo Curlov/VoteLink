@@ -98,6 +98,24 @@ test(
       });
       assert.equal(voteResult.success, true);
 
+      for (let participantIndex = 3; participantIndex <= 20; participantIndex++) {
+        voteResult = await createVote({
+          publicId,
+          optionIds: [firstOption.id],
+          voterToken: `1234567890abcdef-api-test-token-${participantIndex}`,
+        });
+        assert.equal(voteResult.success, true);
+      }
+
+      voteResult = await createVote({
+        publicId,
+        optionIds: [firstOption.id],
+        voterToken: "1234567890abcdef-api-test-token-21",
+      });
+      assert.equal(voteResult.success, false);
+      assert.equal(voteResult.status, 403);
+      assert.match(voteResult.error, /Teilnehmerlimit von 20/);
+
       adminPoll = await updatePollAdminByToken(adminToken, {
         title: "Integration Test Poll Updated",
         description: "Updated by test",

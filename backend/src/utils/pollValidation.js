@@ -1,3 +1,5 @@
+import { FREE_POLL_OPTION_LIMIT } from "./pollOptions.js";
+
 export const ALLOWED_DURATION_DAYS = [1, 7, 14, 28];
 
 export function getExpiresAt(durationDays, now = new Date()) {
@@ -43,6 +45,13 @@ export function cleanCreatePollInput(body = {}, now = new Date()) {
   const cleanedCreatorName = String(creatorName).trim();
   const cleanedCreatorEmail = String(creatorEmail).trim().toLowerCase();
 
+  if (cleanedCreatorName.length < 1) {
+    return {
+      success: false,
+      error: "Bitte gib deinen Namen an.",
+    };
+  }
+
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanedCreatorEmail)) {
     return {
       success: false,
@@ -65,6 +74,13 @@ export function cleanCreatePollInput(body = {}, now = new Date()) {
     return {
       success: false,
       error: "Eine Abstimmung braucht mindestens 2 gültige Optionen.",
+    };
+  }
+
+  if (cleanedOptions.length > FREE_POLL_OPTION_LIMIT) {
+    return {
+      success: false,
+      error: `Kostenlose Abstimmungen können maximal ${FREE_POLL_OPTION_LIMIT} Optionen enthalten.`,
     };
   }
 

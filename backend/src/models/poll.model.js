@@ -1,4 +1,5 @@
 import { pool } from "../db/pool.js";
+import { FREE_POLL_VOTER_LIMIT } from "../utils/pollLimits.js";
 import { hashVoterToken } from "../utils/voterToken.js";
 
 export async function createPoll({
@@ -191,6 +192,7 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
         expires_at
       FROM polls
       WHERE public_id = $1
+      FOR UPDATE
       `,
       [publicId]
     );
@@ -224,6 +226,25 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
       };
     }
 
+    const existingParticipationResult = await client.query(
+      `
+      SELECT id
+      FROM poll_participations
+      WHERE poll_id = $1
+      AND voter_token_hash = $2
+      `,
+      [poll.id, voterTokenHash]
+    );
+
+    if (existingParticipationResult.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        status: 409,
+        error: "Sie haben Ihre Stimme bereits abgegeben.",
+      };
+    }
+
     const optionResult = await client.query(
       `
       SELECT id
@@ -253,27 +274,37 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
       };
     }
 
-    const participationResult = await client.query(
+    const participationCountResult = await client.query(
+      `
+      SELECT COUNT(*)::int AS participant_count
+      FROM poll_participations
+      WHERE poll_id = $1
+      `,
+      [poll.id]
+    );
+    const participantCount =
+      participationCountResult.rows[0]?.participant_count || 0;
+
+    if (participantCount >= FREE_POLL_VOTER_LIMIT) {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        status: 403,
+        error: `Diese kostenlose Abstimmung hat das Teilnehmerlimit von ${FREE_POLL_VOTER_LIMIT} erreicht und nimmt keine Antworten mehr entgegen.`,
+      };
+    }
+
+    await client.query(
       `
       INSERT INTO poll_participations (
         poll_id,
         voter_token_hash
       )
       VALUES ($1, $2)
-      ON CONFLICT (poll_id, voter_token_hash) DO NOTHING
       RETURNING id
       `,
       [poll.id, voterTokenHash]
     );
-
-    if (participationResult.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return {
-        success: false,
-        status: 409,
-        error: "Sie haben Ihre Stimme bereits abgegeben.",
-      };
-    }
 
     const votes = [];
 
@@ -366,6 +397,8 @@ async function buildPollResults(poll, { includeVoterNames = false } = {}) {
     expiresAt: poll.expires_at,
     totalVotes,
     totalVoters,
+    maxVoters: FREE_POLL_VOTER_LIMIT,
+    isParticipantLimitReached: totalVoters >= FREE_POLL_VOTER_LIMIT,
     options: resultsResult.rows.map((option) => ({
       id: option.id,
       text: option.option_text,

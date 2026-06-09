@@ -39,6 +39,7 @@ test("cleanCreatePollInput normalisiert gültige Eingaben", () => {
 test("cleanCreatePollInput lehnt zu wenige Optionen ab", () => {
   const result = cleanCreatePollInput({
     title: "Roadmap",
+    creatorName: "Anna",
     creatorEmail: "team@example.com",
     options: ["Nur eine Option", "   "],
   });
@@ -47,6 +48,33 @@ test("cleanCreatePollInput lehnt zu wenige Optionen ab", () => {
   assert.equal(
     result.error,
     "Eine Abstimmung braucht mindestens 2 gültige Optionen."
+  );
+});
+
+test("cleanCreatePollInput verlangt einen Ersteller-Namen", () => {
+  const result = cleanCreatePollInput({
+    title: "Roadmap",
+    creatorName: "   ",
+    creatorEmail: "team@example.com",
+    options: ["A", "B"],
+  });
+
+  assert.equal(result.success, false);
+  assert.equal(result.error, "Bitte gib deinen Namen an.");
+});
+
+test("cleanCreatePollInput begrenzt kostenlose Abstimmungen auf 6 Optionen", () => {
+  const result = cleanCreatePollInput({
+    title: "Roadmap",
+    creatorName: "Anna",
+    creatorEmail: "team@example.com",
+    options: ["A", "B", "C", "D", "E", "F", "G"],
+  });
+
+  assert.equal(result.success, false);
+  assert.equal(
+    result.error,
+    "Kostenlose Abstimmungen können maximal 6 Optionen enthalten."
   );
 });
 

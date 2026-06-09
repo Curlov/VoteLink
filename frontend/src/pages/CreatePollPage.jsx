@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { createPoll } from "../api/pollsApi";
+import { LegalInfo } from "../components/LegalInfo";
+
+const FREE_POLL_OPTION_LIMIT = 6;
 
 export function CreatePollPage() {
   const [title, setTitle] = useState("");
@@ -21,6 +24,10 @@ export function CreatePollPage() {
   }
 
   function addOption() {
+    if (options.length >= FREE_POLL_OPTION_LIMIT) {
+      return;
+    }
+
     setOptions([...options, ""]);
   }
 
@@ -81,8 +88,6 @@ export function CreatePollPage() {
 
   return (
     <main>
-      <h1 style={{ textAlign: "center" }}>VoteLink</h1>
-
       <section
         style={{
           maxWidth: "820px",
@@ -98,21 +103,33 @@ export function CreatePollPage() {
       >
         <div
           style={{
+            position: "relative",
             padding: "28px 36px",
             background: "#f3f3f3",
             borderBottom: "1px solid #ddd",
           }}
         >
-          <h2
+          <div
             style={{
-              margin: 0,
-              color: "#222",
-              fontSize: "2rem",
-              lineHeight: "1.15",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "16px",
             }}
           >
-            Neue Abstimmung erstellen
-          </h2>
+            <h2
+              style={{
+                margin: 0,
+                flex: "1 1 280px",
+                color: "#222",
+                fontSize: "2rem",
+                lineHeight: "1.15",
+              }}
+            >
+              Neue Abstimmung erstellen
+            </h2>
+          </div>
           <p
             style={{
               marginTop: "10px",
@@ -122,61 +139,100 @@ export function CreatePollPage() {
           >
             Frage eintragen, Optionen ergänzen und den Link teilen.
           </p>
+          <div
+            style={{
+              position: "absolute",
+              right: "36px",
+              bottom: "16px",
+            }}
+          >
+            <LegalInfo />
+          </div>
         </div>
 
         {result ? (
-          <div
-            style={{
-              padding: "32px 36px",
-              display: "grid",
-              gap: "18px",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Abstimmung wurde erstellt</h3>
+          <>
+            <div
+              style={{
+                padding: "32px 36px",
+                display: "grid",
+                gap: "18px",
+                textAlign: "center",
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Abstimmung wurde erstellt</h3>
 
-            <div>
-              <p style={{ color: "#555", marginBottom: "4px" }}>
-                Laufzeit bis
-              </p>
-              <strong>
-                {new Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }).format(new Date(result.poll.expiresAt))}
-              </strong>
+              <div>
+                <p style={{ color: "#555", marginBottom: "4px" }}>
+                  Laufzeit bis
+                </p>
+                <strong>
+                  {new Intl.DateTimeFormat("de-DE", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }).format(new Date(result.poll.expiresAt))}
+                </strong>
+              </div>
+
+              {result.emailDelivery?.sent && (
+                <p style={{ color: "#15803d", margin: 0 }}>
+                  Die Links wurden an {result.poll.creatorEmail} gesendet.
+                </p>
+              )}
+
+              {result.emailDelivery?.skipped && (
+                <p style={{ color: "#777", margin: 0 }}>
+                  Der E-Mail-Versand ist lokal nicht konfiguriert.
+                </p>
+              )}
+
+              {result.emailDelivery?.attempted &&
+                !result.emailDelivery?.sent && (
+                  <p style={{ color: "#991b1b", margin: 0 }}>
+                    Die E-Mail konnte nicht gesendet werden. Die Links stehen
+                    hier trotzdem bereit.
+                  </p>
+                )}
+
+              <div>
+                <p style={{ color: "#555", marginBottom: "4px" }}>
+                  Öffentlicher Link
+                </p>
+                <p
+                  style={{
+                    color: "#777",
+                    fontSize: "0.9rem",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Diesen Link kannst du an Teilnehmer weitergeben.
+                </p>
+                <a href={result.links.publicUrl}>
+                  {`${window.location.origin}${result.links.publicUrl}`}
+                </a>
+              </div>
+
+              <div>
+                <p style={{ color: "#555", marginBottom: "4px" }}>
+                  Admin-Link
+                </p>
+                <p
+                  style={{
+                    color: "#991b1b",
+                    fontSize: "0.9rem",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Nicht weitergeben. Mit diesem Link kann die Abstimmung
+                  verwaltet oder gelöscht werden.
+                </p>
+                <a href={result.links.adminUrl}>
+                  {`${window.location.origin}${result.links.adminUrl}`}
+                </a>
+              </div>
             </div>
 
-            {result.emailDelivery?.sent && (
-              <p style={{ color: "#15803d", margin: 0 }}>
-                Die Links wurden an {result.poll.creatorEmail} gesendet.
-              </p>
-            )}
-
-            {result.emailDelivery?.skipped && (
-              <p style={{ color: "#777", margin: 0 }}>
-                Der E-Mail-Versand ist lokal nicht konfiguriert.
-              </p>
-            )}
-
-            <div>
-              <p style={{ color: "#555", marginBottom: "4px" }}>
-                Öffentlicher Link
-              </p>
-              <a href={result.links.publicUrl}>
-                {`${window.location.origin}${result.links.publicUrl}`}
-              </a>
-            </div>
-
-            <div>
-              <p style={{ color: "#555", marginBottom: "4px" }}>
-                Admin-Link
-              </p>
-              <a href={result.links.adminUrl}>
-                {`${window.location.origin}${result.links.adminUrl}`}
-              </a>
-            </div>
-          </div>
+          </>
         ) : (
           <>
             <form
@@ -202,7 +258,8 @@ export function CreatePollPage() {
                       type="text"
                       value={creatorName}
                       onChange={(event) => setCreatorName(event.target.value)}
-                      placeholder="Optional"
+                      placeholder="Name"
+                      required
                       style={fieldStyle}
                     />
                   </div>
@@ -227,7 +284,8 @@ export function CreatePollPage() {
                   type="text"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Welche Projektidee soll ich zuerst bauen?"
+                  placeholder="Gib deiner Umfrage einen Titel"
+                  required
                   style={fieldStyle}
                 />
               </div>
@@ -316,6 +374,18 @@ export function CreatePollPage() {
                 <h3 style={{ marginTop: 0, marginBottom: "12px" }}>
                   Optionen
                 </h3>
+                <p
+                  style={{
+                    color: "#666",
+                    fontSize: "0.9rem",
+                    lineHeight: "1.4",
+                    marginTop: "-6px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  Kostenlose Abstimmungen können bis zu{" "}
+                  {FREE_POLL_OPTION_LIMIT} Optionen enthalten.
+                </p>
 
                 <div style={{ display: "grid", gap: "10px" }}>
                   {options.map((option, index) => (
@@ -360,12 +430,16 @@ export function CreatePollPage() {
                 <button
                   type="button"
                   onClick={addOption}
+                  disabled={options.length >= FREE_POLL_OPTION_LIMIT}
                   className="vl-button vl-button-secondary"
                   style={{
                     marginTop: "14px",
+                    opacity: options.length >= FREE_POLL_OPTION_LIMIT ? 0.55 : 1,
                   }}
                 >
-                  Option hinzufügen
+                  {options.length >= FREE_POLL_OPTION_LIMIT
+                    ? "Maximale Optionen erreicht"
+                    : "Option hinzufügen"}
                 </button>
               </div>
             </form>
