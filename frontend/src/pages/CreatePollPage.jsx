@@ -102,7 +102,7 @@ export function CreatePollPage() {
               {result.emailDelivery?.sent && (
                 <p className="vl-text-success">
                   Die Aktivierung und alle Links wurden an{" "}
-                  {result.poll.creatorEmail} gesendet.
+                  {creatorEmail} gesendet.
                 </p>
               )}
 

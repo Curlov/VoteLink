@@ -386,22 +386,20 @@ export function VotePage() {
               </div>
             )}
 
-            {poll.creatorEmail && (
-              <div className="vl-report-row">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReportMessage("");
-                    setIsReportOpen(true);
-                  }}
-                  aria-label="Umfrage melden"
-                  title="Umfrage melden"
-                  className="vl-report-button"
-                >
-                  Melden
-                </button>
-              </div>
-            )}
+            <div className="vl-report-row">
+              <button
+                type="button"
+                onClick={() => {
+                  setReportMessage("");
+                  setIsReportOpen(true);
+                }}
+                aria-label="Umfrage melden"
+                title="Umfrage melden"
+                className="vl-report-button"
+              >
+                Melden
+              </button>
+            </div>
           </div>
 
           <div className="vl-vote-panel">

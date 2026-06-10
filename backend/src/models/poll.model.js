@@ -402,7 +402,10 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
   }
 }
 
-async function buildPollResults(poll, { includeVoterNames = false } = {}) {
+async function buildPollResults(
+  poll,
+  { includeVoterNames = false, includeCreatorEmail = false } = {}
+) {
   const resultsResult = await pool.query(
     `
     SELECT
@@ -442,12 +445,11 @@ async function buildPollResults(poll, { includeVoterNames = false } = {}) {
   const totalVotes = totalVotesResult.rows[0].total_votes;
   const totalVoters = totalVotesResult.rows[0].total_voters;
 
-  return {
+  const results = {
     publicId: poll.public_id,
     title: poll.title,
     description: poll.description,
     creatorName: poll.creator_name,
-    creatorEmail: poll.creator_email,
     status: poll.status,
     isAnonymous: poll.is_anonymous,
     allowMultipleVotes: poll.allow_multiple_votes,
@@ -470,6 +472,12 @@ async function buildPollResults(poll, { includeVoterNames = false } = {}) {
           : Math.round((option.vote_count / totalVotes) * 100),
     })),
   };
+
+  if (includeCreatorEmail) {
+    results.creatorEmail = poll.creator_email;
+  }
+
+  return results;
 }
 
 export async function getPollResultsByPublicId(publicId) {
@@ -534,7 +542,10 @@ export async function getPollAdminByToken(adminToken) {
     return null;
   }
 
-  return buildPollResults(poll, { includeVoterNames: true });
+  return buildPollResults(poll, {
+    includeVoterNames: true,
+    includeCreatorEmail: true,
+  });
 }
 
 export async function updatePollAdminByToken(

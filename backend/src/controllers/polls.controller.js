@@ -129,33 +129,40 @@ export async function createPollController(req, res) {
       };
     }
 
-    const includeLinksInResponse = !emailDelivery.sent;
+    const includeLinksInResponse =
+      process.env.NODE_ENV !== "production" && !emailDelivery.sent;
+    const pollResponse = {
+      publicId: poll.public_id,
+      status: poll.status,
+      title: poll.title,
+      description: poll.description,
+      creatorName: poll.creator_name,
+      isAnonymous: poll.is_anonymous,
+      allowMultipleVotes: poll.allow_multiple_votes,
+      createdAt: poll.created_at,
+      expiresAt: poll.expires_at,
+    };
+
+    if (includeLinksInResponse) {
+      pollResponse.adminToken = poll.admin_token;
+    }
 
     res.status(201).json({
       message: "Abstimmung wurde erstellt.",
-      poll: {
-        publicId: poll.public_id,
-        adminToken: includeLinksInResponse ? poll.admin_token : null,
-        status: poll.status,
-        title: poll.title,
-        description: poll.description,
-        creatorName: poll.creator_name,
-        creatorEmail: poll.creator_email,
-        isAnonymous: poll.is_anonymous,
-        allowMultipleVotes: poll.allow_multiple_votes,
-        createdAt: poll.created_at,
-        expiresAt: poll.expires_at,
-      },
+      poll: pollResponse,
       links: {
         publicUrl:
           includeLinksInResponse && poll.status === "active"
             ? `/p/${poll.public_id}`
             : null,
-        adminUrl: includeLinksInResponse ? `/admin/${poll.admin_token}` : null,
-        activationUrl:
-          includeLinksInResponse && poll.activation_token
-            ? `/activate/${poll.activation_token}`
-            : null,
+        ...(includeLinksInResponse
+          ? {
+              adminUrl: `/admin/${poll.admin_token}`,
+              activationUrl: poll.activation_token
+                ? `/activate/${poll.activation_token}`
+                : null,
+            }
+          : {}),
       },
       emailDelivery,
     });
@@ -213,7 +220,6 @@ export async function getPollController(req, res) {
         title: poll.title,
         description: poll.description,
         creatorName: poll.creatorName,
-        creatorEmail: poll.creatorEmail,
         isAnonymous: poll.isAnonymous,
         allowMultipleVotes: poll.allowMultipleVotes,
         createdAt: poll.createdAt,
