@@ -8,6 +8,21 @@ export async function cleanupExpiredPolls(retentionDaysInput) {
   try {
     await client.query("BEGIN");
 
+    const expiredCreatorIpsResult = await client.query(
+      `
+      UPDATE polls
+      SET creator_ip = NULL
+      WHERE creator_ip IS NOT NULL
+        AND creator_ip_expires_at <= CURRENT_TIMESTAMP
+      `
+    );
+    const expiredRateLimitEventsResult = await client.query(
+      `
+      DELETE FROM rate_limit_events
+      WHERE created_at < CURRENT_TIMESTAMP - interval '2 days'
+      `
+    );
+
     const expiredPollsResult = await client.query(
       `
       SELECT id
@@ -23,6 +38,8 @@ export async function cleanupExpiredPolls(retentionDaysInput) {
       await client.query("COMMIT");
       return {
         deletedPolls: 0,
+        clearedCreatorIps: expiredCreatorIpsResult.rowCount,
+        deletedRateLimitEvents: expiredRateLimitEventsResult.rowCount,
         retentionDays,
       };
     }
@@ -60,6 +77,8 @@ export async function cleanupExpiredPolls(retentionDaysInput) {
 
     return {
       deletedPolls: pollIds.length,
+      clearedCreatorIps: expiredCreatorIpsResult.rowCount,
+      deletedRateLimitEvents: expiredRateLimitEventsResult.rowCount,
       retentionDays,
     };
   } catch (error) {
@@ -78,7 +97,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
     console.log(
       `Gelöschte abgelaufene Abstimmungen: ${result.deletedPolls} ` +
-        `(Aufbewahrung: ${result.retentionDays} Tage nach Ablauf)`
+        `(Aufbewahrung: ${result.retentionDays} Tage nach Ablauf), ` +
+        `gelöschte Ersteller-IPs: ${result.clearedCreatorIps}, ` +
+        `gelöschte Rate-Limit-Events: ${result.deletedRateLimitEvents}`
     );
   } catch (error) {
     console.error("Cleanup fehlgeschlagen:");

@@ -51,23 +51,29 @@ export function buildPollCreatedEmail({
   title,
   publicUrl,
   adminUrl,
+  activationUrl,
   expiresAt,
 }) {
   const normalizedTitle = normalizeHeaderText(title);
   const safeTitle = escapeHtml(normalizedTitle);
   const safePublicUrl = escapeHtml(publicUrl);
   const safeAdminUrl = escapeHtml(adminUrl);
+  const safeActivationUrl = escapeHtml(activationUrl);
   const formattedExpiresAt = formatDateTime(expiresAt);
   const safeFormattedExpiresAt = escapeHtml(formattedExpiresAt);
 
   return {
-    subject: `VoteLink: Deine Abstimmung "${normalizedTitle}" ist bereit`,
+    subject: `VoteLink: Abstimmung "${normalizedTitle}" aktivieren`,
     text: [
       `Deine Abstimmung "${normalizedTitle}" wurde erstellt.`,
       ...(formattedExpiresAt ? [`Laufzeit bis: ${formattedExpiresAt}`] : []),
       "",
+      "Aktivierung erforderlich",
+      "Bitte aktiviere die Abstimmung über diesen Link:",
+      activationUrl,
+      "",
       "Teilnehmer-Link",
-      "Diesen Link kannst du an Teilnehmer weitergeben:",
+      "Nach der Aktivierung kannst du diesen Link an Teilnehmer weitergeben:",
       publicUrl,
       "",
       "Admin-Link",
@@ -76,11 +82,11 @@ export function buildPollCreatedEmail({
       "",
       "Wichtig: Gib den Admin-Link nicht weiter. Mit ihm kann die Abstimmung verwaltet, geschlossen oder dauerhaft gelöscht werden.",
       "",
-      "Hinweis: Teilnehmer sehen über den öffentlichen Link die Abstimmung und das aktuelle Zwischenergebnis.",
+      "Hinweis: Die Abstimmung ist erst nach Aktivierung über den E-Mail-Link öffentlich erreichbar.",
     ].join("\n"),
     html: `
       <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #222; line-height: 1.5;">
-        <h1 style="font-size: 22px; margin: 0 0 12px;">Deine Abstimmung ist bereit</h1>
+        <h1 style="font-size: 22px; margin: 0 0 12px;">Abstimmung aktivieren</h1>
         <p style="margin: 0 0 18px;">
           <strong>${safeTitle}</strong> wurde erstellt.${
             safeFormattedExpiresAt
@@ -89,9 +95,15 @@ export function buildPollCreatedEmail({
           }
         </p>
 
+        <div style="padding: 16px; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 14px; background: #f0fdf4;">
+          <p style="margin: 0 0 6px; font-weight: 700; color: #166534;">Aktivierung erforderlich</p>
+          <p style="margin: 0 0 10px; color: #166534;">Bitte bestätige deine E-Mail-Adresse, bevor die Abstimmung öffentlich erreichbar ist.</p>
+          <a href="${safeActivationUrl}" style="color: #166534; word-break: break-word;">${safeActivationUrl}</a>
+        </div>
+
         <div style="padding: 16px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 14px; background: #f7f7f7;">
           <p style="margin: 0 0 6px; font-weight: 700;">Teilnehmer-Link</p>
-          <p style="margin: 0 0 10px; color: #555;">Diesen Link kannst du an Teilnehmer weitergeben.</p>
+          <p style="margin: 0 0 10px; color: #555;">Nach der Aktivierung kannst du diesen Link an Teilnehmer weitergeben.</p>
           <a href="${safePublicUrl}" style="color: #1d4ed8; word-break: break-word;">${safePublicUrl}</a>
         </div>
 
@@ -105,7 +117,7 @@ export function buildPollCreatedEmail({
         </div>
 
         <p style="margin: 0; color: #555;">
-          Teilnehmer sehen über den öffentlichen Link die Abstimmung und das aktuelle Zwischenergebnis.
+          Die Abstimmung ist erst nach Aktivierung über den E-Mail-Link öffentlich erreichbar.
         </p>
       </div>
     `,
@@ -117,6 +129,7 @@ export async function sendPollCreatedEmail({
   title,
   publicUrl,
   adminUrl,
+  activationUrl,
   expiresAt,
 }) {
   if (!isMailConfigured()) {
@@ -133,6 +146,7 @@ export async function sendPollCreatedEmail({
     title,
     publicUrl,
     adminUrl,
+    activationUrl,
     expiresAt,
   });
 

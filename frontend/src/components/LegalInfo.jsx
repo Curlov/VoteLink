@@ -12,9 +12,16 @@ const legalInfo = {
   retentionDays: import.meta.env.VITE_LEGAL_RETENTION_DAYS || "14",
 };
 
-function LegalModal({ type, onClose }) {
+function LegalModal({ activeTab, onTabChange, onClose }) {
+  const type = activeTab;
   const isPrivacy = type === "privacy";
-  const title = isPrivacy ? "Datenschutz" : "Impressum";
+  const isTerms = type === "terms";
+  const title = isPrivacy ? "Datenschutz" : isTerms ? "AGB" : "Impressum";
+  const tabs = [
+    { id: "privacy", label: "Datenschutz" },
+    { id: "imprint", label: "Impressum" },
+    { id: "terms", label: "AGB" },
+  ];
 
   return (
     <div
@@ -27,6 +34,20 @@ function LegalModal({ type, onClose }) {
       <div onClick={(event) => event.stopPropagation()} className="vl-modal">
         <div className="vl-modal-header">
           <h2 id="legal-info-title">{title}</h2>
+          <div className="vl-modal-tabs" aria-label="Rechtliche Inhalte">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`vl-button ${
+                  activeTab === tab.id ? "" : "vl-button-secondary"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="vl-modal-body">
@@ -40,9 +61,14 @@ function LegalModal({ type, onClose }) {
               <p>
                 Beim Erstellen einer Abstimmung speichert VoteLink Titel,
                 Beschreibung, Optionen, Laufzeit, Einstellungen zur Teilnahme
-                sowie E-Mail-Adresse und Namen des Erstellers. Die
-                E-Mail-Adresse wird für die Zustellung der Links und als
-                Kontaktadresse für Rückfragen verwendet.
+                sowie E-Mail-Adresse, Namen und IP-Adresse des Erstellers. Die
+                E-Mail-Adresse wird für die Aktivierung, Zustellung der Links
+                und als Kontaktadresse für Rückfragen verwendet.
+              </p>
+              <p>
+                Die IP-Adresse des Erstellers wird zur Missbrauchsverfolgung
+                für maximal ein Jahr gespeichert und danach gelöscht oder
+                anonymisiert.
               </p>
               <p>
                 Zur Erschwerung von Mehrfachabstimmungen erzeugt der Browser pro
@@ -64,6 +90,45 @@ function LegalModal({ type, onClose }) {
                 {legalInfo.retentionDays} Tagen automatisch gelöscht.
                 Der Ersteller kann eine Abstimmung über den Admin-Link auch
                 vorher dauerhaft löschen.
+              </p>
+              <p>
+                Meldungen zu Abstimmungen werden mit E-Mail-Adresse, Grund,
+                optionalen Details, Zeitpunkt und IP-Adresse des Meldenden
+                gespeichert, damit der Vorgang geprüft werden kann.
+              </p>
+            </>
+          ) : isTerms ? (
+            <>
+              <p>
+                Ersteller sind für Titel, Beschreibung, Optionen und sonstige
+                Inhalte ihrer Abstimmungen selbst verantwortlich. VoteLink
+                distanziert sich von nutzergenerierten Inhalten und macht sich
+                diese nicht zu eigen.
+              </p>
+              <p>
+                Beim Erstellen und Teilen von Abstimmungen ist geltendes Recht
+                einzuhalten. Unzulässig sind insbesondere rechtswidrige,
+                beleidigende, fremdenfeindliche, rassistische,
+                antisemitische, sexistische, diskriminierende, gewaltverherrlichende,
+                bedrohende, belästigende, pornografische, jugendgefährdende,
+                irreführende oder persönlichkeitsrechtsverletzende Inhalte.
+              </p>
+              <p>
+                Verboten sind außerdem Inhalte, die zu Straftaten aufrufen,
+                Rechte Dritter verletzen, personenbezogene Daten ohne
+                Rechtsgrundlage offenlegen, Spam darstellen oder VoteLink
+                technisch missbrauchen.
+              </p>
+              <p>
+                VoteLink kann gemeldete oder auffällige Abstimmungen prüfen,
+                sperren, deaktivieren oder löschen. Bei schweren Verstößen
+                können vorhandene Kontakt- und Protokolldaten zur
+                Rechtsverfolgung genutzt werden.
+              </p>
+              <p>
+                Abstimmungen können über den Meldebutton in der Abstimmung
+                gemeldet werden. Für Rückfragen ist eine E-Mail-Adresse
+                erforderlich.
               </p>
             </>
           ) : (
@@ -92,33 +157,32 @@ function LegalModal({ type, onClose }) {
 }
 
 export function LegalInfo() {
-  const [activeModal, setActiveModal] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("privacy");
 
   return (
     <>
       <div className="vl-legal-dock" aria-label="Rechtliche Informationen">
         <button
           type="button"
-          onClick={() => setActiveModal("privacy")}
+          onClick={() => {
+            setActiveTab("privacy");
+            setIsModalOpen(true);
+          }}
           className="vl-info-circle"
-          aria-label="Datenschutz anzeigen"
-          title="Datenschutz"
+          aria-label="Rechtliche Informationen anzeigen"
+          title="Rechtliche Informationen"
         >
           i
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveModal("imprint")}
-          className="vl-info-circle"
-          aria-label="Impressum anzeigen"
-          title="Impressum"
-        >
-          §
-        </button>
       </div>
 
-      {activeModal && (
-        <LegalModal type={activeModal} onClose={() => setActiveModal(null)} />
+      {isModalOpen && (
+        <LegalModal
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onClose={() => setIsModalOpen(false)}
+        />
       )}
     </>
   );

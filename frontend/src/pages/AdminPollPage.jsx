@@ -270,7 +270,7 @@ export function AdminPollPage() {
           <div
             style={{
               position: "absolute",
-              right: "36px",
+              right: "16px",
               bottom: "16px",
             }}
           >

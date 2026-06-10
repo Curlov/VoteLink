@@ -33,6 +33,9 @@ function getCorsOptions() {
 }
 
 app.disable("x-powered-by");
+if (process.env.TRUST_PROXY === "1") {
+  app.set("trust proxy", 1);
+}
 app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: "100kb" }));
 

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import {
   getParticipation,
   getPoll,
+  reportPoll,
   vote,
   getPollResults,
 } from "../api/pollsApi";
@@ -89,6 +90,12 @@ export function VotePage() {
   const [hasVoted, setHasVoted] = useState(false);
   const [hasJustVoted, setHasJustVoted] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reporterEmail, setReporterEmail] = useState("");
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportMessage, setReportMessage] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => new Date());
 
@@ -197,6 +204,32 @@ export function VotePage() {
     }
 
     window.location.reload();
+  }
+
+  async function handleReportSubmit(event) {
+    event.preventDefault();
+
+    try {
+      setError("");
+      setReportMessage("");
+      setIsReporting(true);
+
+      const response = await reportPoll(publicId, {
+        reporterEmail,
+        reason: reportReason,
+        details: reportDetails,
+      });
+
+      setReportMessage(response.message);
+      setReporterEmail("");
+      setReportReason("");
+      setReportDetails("");
+    } catch (err) {
+      setReportMessage("");
+      setError(err.message);
+    } finally {
+      setIsReporting(false);
+    }
   }
 
   if (isLoading) {
@@ -309,7 +342,7 @@ export function VotePage() {
             <div
               style={{
                 position: "absolute",
-                right: "36px",
+                right: "16px",
                 bottom: "16px",
               }}
             >
@@ -493,6 +526,8 @@ export function VotePage() {
                   marginBottom: "-22px",
                   marginLeft: "-20px",
                   textAlign: "left",
+                  display: "flex",
+                  gap: "8px",
                 }}
               >
                 <button
@@ -514,6 +549,29 @@ export function VotePage() {
                   }}
                 >
                   i
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReportMessage("");
+                    setIsReportOpen(true);
+                  }}
+                  aria-label="Umfrage melden"
+                  title="Umfrage melden"
+                  style={{
+                    minWidth: "76px",
+                    height: "24px",
+                    borderRadius: "999px",
+                    border: "1px solid #ddd",
+                    background: "#f7f7f7",
+                    color: "#777",
+                    cursor: "pointer",
+                    fontSize: "0.78rem",
+                    fontWeight: "400",
+                    lineHeight: "1",
+                  }}
+                >
+                  Melden
                 </button>
               </div>
             )}
@@ -712,53 +770,19 @@ export function VotePage() {
           aria-modal="true"
           aria-labelledby="poll-info-title"
           onClick={() => setIsInfoOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-            background: "rgba(0, 0, 0, 0.35)",
-          }}
+          className="vl-modal-backdrop"
         >
           <div
             onClick={(event) => event.stopPropagation()}
-            style={{
-              width: "min(420px, 100%)",
-              borderRadius: "20px",
-              border: "1px solid #ddd",
-              background: "#fff",
-              boxShadow: "0 18px 48px rgba(0, 0, 0, 0.22)",
-              color: "#222",
-              overflow: "hidden",
-              textAlign: "left",
-            }}
+            className="vl-modal"
           >
-            <div
-              style={{
-                padding: "22px 26px",
-                background: "#f3f3f3",
-                borderBottom: "1px solid #ddd",
-              }}
-            >
-              <h3
-                id="poll-info-title"
-                style={{ margin: 0, color: "#222" }}
-              >
+            <div className="vl-modal-header">
+              <h2 id="poll-info-title">
                 Informationen zur Umfrage
-              </h3>
+              </h2>
             </div>
 
-            <div
-              style={{
-                padding: "24px 26px",
-                display: "grid",
-                gap: "12px",
-                color: "#555",
-              }}
-            >
+            <div className="vl-modal-body">
               <p>
                 Erstellt von:{" "}
                 <strong style={{ color: "#222" }}>
@@ -789,14 +813,7 @@ export function VotePage() {
               </p>
             </div>
 
-            <div
-              style={{
-                padding: "18px 26px",
-                background: "#f3f3f3",
-                borderTop: "1px solid #ddd",
-                textAlign: "right",
-              }}
-            >
+            <div className="vl-modal-footer">
               <button
                 type="button"
                 onClick={() => setIsInfoOpen(false)}
@@ -805,6 +822,116 @@ export function VotePage() {
                 Schließen
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isReportOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="poll-report-title"
+          onClick={() => setIsReportOpen(false)}
+          className="vl-modal-backdrop"
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="vl-modal"
+          >
+            <div className="vl-modal-header">
+              <h2 id="poll-report-title">Umfrage melden</h2>
+            </div>
+
+            <form onSubmit={handleReportSubmit}>
+              <div className="vl-modal-body">
+                {reportMessage ? (
+                  <p style={{ color: "#15803d" }}>{reportMessage}</p>
+                ) : (
+                  <>
+                    <label style={{ color: "#333", fontWeight: "700" }}>
+                      Deine E-Mail
+                      <input
+                        type="email"
+                        value={reporterEmail}
+                        onChange={(event) =>
+                          setReporterEmail(event.target.value)
+                        }
+                        required
+                        className="vl-input"
+                        style={{ width: "100%", marginTop: "6px" }}
+                      />
+                    </label>
+
+                    <label style={{ color: "#333", fontWeight: "700" }}>
+                      Grund
+                      <select
+                        value={reportReason}
+                        onChange={(event) =>
+                          setReportReason(event.target.value)
+                        }
+                        required
+                        className="vl-input"
+                        style={{ width: "100%", marginTop: "6px" }}
+                      >
+                        <option value="">Bitte auswählen</option>
+                        <option value="Rechtswidrige Inhalte">
+                          Rechtswidrige Inhalte
+                        </option>
+                        <option value="Hassrede oder Diskriminierung">
+                          Hassrede oder Diskriminierung
+                        </option>
+                        <option value="Belästigung oder Bedrohung">
+                          Belästigung oder Bedrohung
+                        </option>
+                        <option value="Spam oder Missbrauch">
+                          Spam oder Missbrauch
+                        </option>
+                        <option value="Sonstiger Verstoß">
+                          Sonstiger Verstoß
+                        </option>
+                      </select>
+                    </label>
+
+                    <label style={{ color: "#333", fontWeight: "700" }}>
+                      Details
+                      <textarea
+                        value={reportDetails}
+                        onChange={(event) =>
+                          setReportDetails(event.target.value)
+                        }
+                        className="vl-input"
+                        style={{
+                          width: "100%",
+                          minHeight: "120px",
+                          marginTop: "6px",
+                          resize: "vertical",
+                        }}
+                      />
+                    </label>
+                  </>
+                )}
+              </div>
+
+              <div className="vl-modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setIsReportOpen(false)}
+                  className="vl-button vl-button-secondary"
+                  style={{ marginRight: "8px" }}
+                >
+                  Schließen
+                </button>
+                {!reportMessage && (
+                  <button
+                    type="submit"
+                    disabled={isReporting}
+                    className="vl-button"
+                  >
+                    {isReporting ? "Wird gemeldet..." : "Melden"}
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       )}

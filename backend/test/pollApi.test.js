@@ -4,6 +4,7 @@ import { pool } from "../src/db/pool.js";
 import { nanoid } from "nanoid";
 import {
   closePollAdminByToken,
+  activatePollByToken,
   createPoll,
   createVote,
   deletePollAdminByToken,
@@ -24,11 +25,13 @@ test(
   },
   async () => {
     let adminToken;
+    let publicId;
 
     try {
-      const createdPoll = await createPoll({
+      const createResult = await createPoll({
         publicId: nanoid(10),
         adminToken: nanoid(32),
+        activationToken: nanoid(32),
         title: "Integration Test Poll",
         description: "",
         creatorName: "",
@@ -38,9 +41,38 @@ test(
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         options: ["A", "B"],
       });
+      assert.equal(createResult.success, true);
+      const createdPoll = createResult.poll;
 
-      const publicId = createdPoll.public_id;
+      publicId = createdPoll.public_id;
       adminToken = createdPoll.admin_token;
+
+      assert.equal(createdPoll.status, "pending");
+      assert.equal(await getPollByPublicId(publicId), null);
+      const storedTokenResult = await pool.query(
+        `
+        SELECT admin_token, activation_token
+        FROM polls
+        WHERE public_id = $1
+        `,
+        [publicId]
+      );
+      assert.notEqual(storedTokenResult.rows[0].admin_token, adminToken);
+      assert.notEqual(
+        storedTokenResult.rows[0].activation_token,
+        createdPoll.activation_token
+      );
+      assert.equal(storedTokenResult.rows[0].admin_token.length, 64);
+      assert.equal(storedTokenResult.rows[0].activation_token.length, 64);
+
+      const activatedPoll = await activatePollByToken(
+        createdPoll.activation_token
+      );
+      assert.equal(activatedPoll.publicId, publicId);
+      const activatedAgainPoll = await activatePollByToken(
+        createdPoll.activation_token
+      );
+      assert.equal(activatedAgainPoll.publicId, publicId);
 
       let poll = await getPollByPublicId(publicId);
       const [firstOption, secondOption] = poll.options;
@@ -129,31 +161,29 @@ test(
       assert.equal(await getPollAdminByToken(adminToken), null);
       adminToken = null;
     } finally {
-      if (adminToken) {
+      if (publicId) {
         await pool.query(
           `
           DELETE FROM poll_participations
-          WHERE poll_id IN (SELECT id FROM polls WHERE admin_token = $1)
+          WHERE poll_id IN (SELECT id FROM polls WHERE public_id = $1)
           `,
-          [adminToken]
+          [publicId]
         );
         await pool.query(
           `
           DELETE FROM votes
-          WHERE poll_id IN (SELECT id FROM polls WHERE admin_token = $1)
+          WHERE poll_id IN (SELECT id FROM polls WHERE public_id = $1)
           `,
-          [adminToken]
+          [publicId]
         );
         await pool.query(
           `
           DELETE FROM poll_options
-          WHERE poll_id IN (SELECT id FROM polls WHERE admin_token = $1)
+          WHERE poll_id IN (SELECT id FROM polls WHERE public_id = $1)
           `,
-          [adminToken]
+          [publicId]
         );
-        await pool.query("DELETE FROM polls WHERE admin_token = $1", [
-          adminToken,
-        ]);
+        await pool.query("DELETE FROM polls WHERE public_id = $1", [publicId]);
       }
 
       await pool.end();

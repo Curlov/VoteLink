@@ -13,6 +13,7 @@ export function CreatePollPage() {
   const [allowMultipleVotes, setAllowMultipleVotes] = useState(false);
   const [durationDays, setDurationDays] = useState(7);
   const [options, setOptions] = useState(["", ""]);
+  const [hasAcceptedRules, setHasAcceptedRules] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -142,7 +143,7 @@ export function CreatePollPage() {
           <div
             style={{
               position: "absolute",
-              right: "36px",
+              right: "16px",
               bottom: "16px",
             }}
           >
@@ -160,7 +161,18 @@ export function CreatePollPage() {
                 textAlign: "center",
               }}
             >
-              <h3 style={{ margin: 0 }}>Abstimmung wurde erstellt</h3>
+              <h3 style={{ margin: 0 }}>
+                {result.poll.status === "pending"
+                  ? "Bitte E-Mail bestätigen"
+                  : "Abstimmung wurde erstellt"}
+              </h3>
+
+              {result.poll.status === "pending" && (
+                <p style={{ color: "#555", margin: 0 }}>
+                  Die Abstimmung wird erst öffentlich erreichbar, nachdem der
+                  Aktivierungslink aus der E-Mail geöffnet wurde.
+                </p>
+              )}
 
               <div>
                 <p style={{ color: "#555", marginBottom: "4px" }}>
@@ -194,6 +206,18 @@ export function CreatePollPage() {
                   </p>
                 )}
 
+              {result.links.activationUrl && (
+                <div>
+                  <p style={{ color: "#777", marginBottom: "4px" }}>
+                    Lokaler Aktivierungslink
+                  </p>
+                  <a href={result.links.activationUrl}>
+                    {`${window.location.origin}${result.links.activationUrl}`}
+                  </a>
+                </div>
+              )}
+
+              {result.links.publicUrl && (
               <div>
                 <p style={{ color: "#555", marginBottom: "4px" }}>
                   Öffentlicher Link
@@ -211,6 +235,7 @@ export function CreatePollPage() {
                   {`${window.location.origin}${result.links.publicUrl}`}
                 </a>
               </div>
+              )}
 
               <div>
                 <p style={{ color: "#555", marginBottom: "4px" }}>
@@ -442,6 +467,32 @@ export function CreatePollPage() {
                     : "Option hinzufügen"}
                 </button>
               </div>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                  padding: "12px 16px",
+                  borderRadius: "16px",
+                  border: "1px solid #ddd",
+                  background: "#fafafa",
+                  cursor: "pointer",
+                  lineHeight: "1.45",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={hasAcceptedRules}
+                  onChange={(event) =>
+                    setHasAcceptedRules(event.target.checked)
+                  }
+                  required
+                  style={{ marginTop: "4px" }}
+                />
+                Ich bin für die Inhalte verantwortlich und bestätige, dass die
+                Abstimmung geltendes Recht sowie die Nutzungsregeln einhält.
+              </label>
             </form>
 
             <div

@@ -1,23 +1,53 @@
 import { pool } from "../db/pool.js";
 import { FREE_POLL_VOTER_LIMIT } from "../utils/pollLimits.js";
-import { hashVoterToken } from "../utils/voterToken.js";
+import { hashToken, hashVoterToken } from "../utils/voterToken.js";
 
 export async function createPoll({
   publicId,
   adminToken,
+  activationToken,
   title,
   description,
   creatorName,
   creatorEmail,
+  creatorIp,
   isAnonymous,
   allowMultipleVotes,
   expiresAt,
   options,
 }) {
   const client = await pool.connect();
+  const adminTokenHash = hashToken(adminToken);
+  const activationTokenHash = hashToken(activationToken);
+
+  if (!adminTokenHash || !activationTokenHash) {
+    return {
+      success: false,
+      status: 500,
+      error: "Interner Fehler beim Erzeugen der Zugriffstoken.",
+    };
+  }
 
   try {
     await client.query("BEGIN");
+
+    const ignoredCreatorResult = await client.query(
+      `
+      SELECT id
+      FROM ignored_creator_emails
+      WHERE email = $1
+      `,
+      [creatorEmail]
+    );
+
+    if (ignoredCreatorResult.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        status: 403,
+        error: "Mit dieser E-Mail-Adresse können keine Abstimmungen erstellt werden.",
+      };
+    }
 
     const pollResult = await client.query(
       `
@@ -28,27 +58,38 @@ export async function createPoll({
         description,
         creator_name,
         creator_email,
+        creator_ip,
+        creator_ip_expires_at,
+        status,
+        activation_token,
+        activated_at,
         is_anonymous,
         allow_multiple_votes,
         expires_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING id, public_id, admin_token, title, description, creator_name, creator_email, is_anonymous, allow_multiple_votes, created_at, expires_at
+      VALUES ($1, $2, $3, $4, $5, $6, $7::inet, CURRENT_TIMESTAMP + interval '1 year', 'pending', $8, NULL, $9, $10, $11)
+      RETURNING id, public_id, admin_token, activation_token, title, description, creator_name, creator_email, status, is_anonymous, allow_multiple_votes, created_at, expires_at
       `,
       [
         publicId,
-        adminToken,
+        adminTokenHash,
         title,
         description || null,
         creatorName || null,
         creatorEmail,
+        creatorIp || null,
+        activationTokenHash,
         isAnonymous,
         allowMultipleVotes,
         expiresAt,
       ]
     );
 
-    const poll = pollResult.rows[0];
+    const poll = {
+      ...pollResult.rows[0],
+      admin_token: adminToken,
+      activation_token: activationToken,
+    };
 
     for (let i = 0; i < options.length; i++) {
       await client.query(
@@ -62,7 +103,10 @@ export async function createPoll({
 
     await client.query("COMMIT");
 
-    return poll;
+    return {
+      success: true,
+      poll,
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -81,12 +125,14 @@ export async function getPollByPublicId(publicId) {
       description,
       creator_name,
       creator_email,
+      status,
       is_anonymous,
       allow_multiple_votes,
       created_at,
       expires_at
     FROM polls
     WHERE public_id = $1
+      AND status = 'active'
     `,
     [publicId]
   );
@@ -117,6 +163,7 @@ export async function getPollByPublicId(publicId) {
     description: poll.description,
     creatorName: poll.creator_name,
     creatorEmail: poll.creator_email,
+    status: poll.status,
     isAnonymous: poll.is_anonymous,
     allowMultipleVotes: poll.allow_multiple_votes,
     createdAt: poll.created_at,
@@ -186,10 +233,11 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
     const pollResult = await client.query(
       `
       SELECT 
-        id,
-        is_anonymous,
-        allow_multiple_votes,
-        expires_at
+      id,
+      is_anonymous,
+      allow_multiple_votes,
+      status,
+      expires_at
       FROM polls
       WHERE public_id = $1
       FOR UPDATE
@@ -205,6 +253,15 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
         success: false,
         status: 404,
         error: "Abstimmung wurde nicht gefunden.",
+      };
+    }
+
+    if (poll.status !== "active") {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        status: 403,
+        error: "Diese Abstimmung ist nicht aktiv.",
       };
     }
 
@@ -391,6 +448,7 @@ async function buildPollResults(poll, { includeVoterNames = false } = {}) {
     description: poll.description,
     creatorName: poll.creator_name,
     creatorEmail: poll.creator_email,
+    status: poll.status,
     isAnonymous: poll.is_anonymous,
     allowMultipleVotes: poll.allow_multiple_votes,
     createdAt: poll.created_at,
@@ -422,12 +480,14 @@ export async function getPollResultsByPublicId(publicId) {
       public_id,
       title,
       description,
+      status,
       is_anonymous,
       allow_multiple_votes,
       created_at,
       expires_at
     FROM polls
     WHERE public_id = $1
+      AND status = 'active'
     `,
     [publicId]
   );
@@ -442,6 +502,12 @@ export async function getPollResultsByPublicId(publicId) {
 }
 
 export async function getPollAdminByToken(adminToken) {
+  const adminTokenHash = hashToken(adminToken);
+
+  if (!adminTokenHash) {
+    return null;
+  }
+
   const pollResult = await pool.query(
     `
     SELECT
@@ -451,6 +517,7 @@ export async function getPollAdminByToken(adminToken) {
       description,
       creator_name,
       creator_email,
+      status,
       is_anonymous,
       allow_multiple_votes,
       created_at,
@@ -458,7 +525,7 @@ export async function getPollAdminByToken(adminToken) {
     FROM polls
     WHERE admin_token = $1
     `,
-    [adminToken]
+    [adminTokenHash]
   );
 
   const poll = pollResult.rows[0];
@@ -474,8 +541,14 @@ export async function updatePollAdminByToken(
   adminToken,
   { title, description }
 ) {
+  const adminTokenHash = hashToken(adminToken);
+
+  if (!adminTokenHash) {
+    return null;
+  }
+
   const updates = [];
-  const values = [adminToken];
+  const values = [adminTokenHash];
 
   if (title !== undefined) {
     values.push(title);
@@ -509,6 +582,12 @@ export async function updatePollAdminByToken(
 }
 
 export async function closePollAdminByToken(adminToken) {
+  const adminTokenHash = hashToken(adminToken);
+
+  if (!adminTokenHash) {
+    return null;
+  }
+
   const updateResult = await pool.query(
     `
     UPDATE polls
@@ -516,7 +595,7 @@ export async function closePollAdminByToken(adminToken) {
     WHERE admin_token = $1
     RETURNING id
     `,
-    [adminToken]
+    [adminTokenHash]
   );
 
   if (updateResult.rowCount === 0) {
@@ -527,6 +606,12 @@ export async function closePollAdminByToken(adminToken) {
 }
 
 export async function extendPollAdminByToken(adminToken, durationDays) {
+  const adminTokenHash = hashToken(adminToken);
+
+  if (!adminTokenHash) {
+    return null;
+  }
+
   const updateResult = await pool.query(
     `
     UPDATE polls
@@ -536,7 +621,7 @@ export async function extendPollAdminByToken(adminToken, durationDays) {
     WHERE admin_token = $1
     RETURNING id
     `,
-    [adminToken, durationDays]
+    [adminTokenHash, durationDays]
   );
 
   if (updateResult.rowCount === 0) {
@@ -548,6 +633,11 @@ export async function extendPollAdminByToken(adminToken, durationDays) {
 
 export async function deletePollAdminByToken(adminToken) {
   const client = await pool.connect();
+  const adminTokenHash = hashToken(adminToken);
+
+  if (!adminTokenHash) {
+    return false;
+  }
 
   try {
     await client.query("BEGIN");
@@ -558,7 +648,7 @@ export async function deletePollAdminByToken(adminToken) {
       FROM polls
       WHERE admin_token = $1
       `,
-      [adminToken]
+      [adminTokenHash]
     );
 
     const poll = pollResult.rows[0];
@@ -598,4 +688,307 @@ export async function deletePollAdminByToken(adminToken) {
   } finally {
     client.release();
   }
+}
+
+export async function activatePollByToken(activationToken) {
+  const activationTokenHash = hashToken(activationToken);
+
+  if (!activationTokenHash) {
+    return null;
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const pollResult = await client.query(
+      `
+      SELECT public_id, title, status
+      FROM polls
+      WHERE activation_token = $1
+      FOR UPDATE
+      `,
+      [activationTokenHash]
+    );
+
+    const poll = pollResult.rows[0];
+
+    if (!poll || !["pending", "active"].includes(poll.status)) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    if (poll.status === "pending") {
+      await client.query(
+        `
+        UPDATE polls
+        SET status = 'active',
+            activated_at = COALESCE(activated_at, CURRENT_TIMESTAMP)
+        WHERE activation_token = $1
+        `,
+        [activationTokenHash]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      publicId: poll.public_id,
+      title: poll.title,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createPollReport({
+  publicId,
+  reporterEmail,
+  reason,
+  details,
+  reporterIp,
+}) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const pollResult = await client.query(
+      `
+      SELECT id
+      FROM polls
+      WHERE public_id = $1
+      `,
+      [publicId]
+    );
+
+    const poll = pollResult.rows[0];
+
+    if (!poll) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const rateLimitResult = await client.query(
+      `
+      SELECT COUNT(*)::int AS report_count
+      FROM poll_reports
+      WHERE created_at > CURRENT_TIMESTAMP - interval '1 hour'
+        AND (
+          ($1::inet IS NOT NULL AND reporter_ip = $1::inet)
+          OR ($1::inet IS NULL AND reporter_email = $2)
+        )
+      `,
+      [reporterIp || null, reporterEmail]
+    );
+
+    if ((rateLimitResult.rows[0]?.report_count || 0) >= 3) {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        status: 429,
+        error: "Es sind maximal 3 Meldungen pro Stunde möglich.",
+      };
+    }
+
+    const result = await client.query(
+      `
+      INSERT INTO poll_reports (
+        poll_id,
+        reporter_email,
+        reason,
+        details,
+        reporter_ip
+      )
+      VALUES ($1, $2, $3, $4, $5::inet)
+      RETURNING id, created_at
+      `,
+      [poll.id, reporterEmail, reason, details || null, reporterIp || null]
+    );
+
+    await client.query("COMMIT");
+
+    const report = result.rows[0];
+
+    return {
+      success: true,
+      report: {
+        id: report.id,
+        createdAt: report.created_at,
+      },
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function listOperatorPolls() {
+  const result = await pool.query(
+    `
+    SELECT
+      p.id,
+      p.public_id,
+      p.title,
+      p.description,
+      p.creator_name,
+      p.creator_email,
+      p.creator_ip::text AS creator_ip,
+      p.creator_ip_expires_at,
+      p.status,
+      p.created_at,
+      p.activated_at,
+      p.blocked_at,
+      p.blocked_reason,
+      p.expires_at,
+      COUNT(DISTINCT po.id)::int AS option_count,
+      COUNT(DISTINCT pp.id)::int AS participant_count,
+      COUNT(DISTINCT pr.id)::int AS report_count,
+      MAX(pr.created_at) AS last_reported_at,
+      COALESCE(
+        (
+          SELECT json_agg(report_data ORDER BY report_data.created_at DESC)
+          FROM (
+            SELECT
+              prd.id,
+              prd.reporter_email,
+              prd.reason,
+              prd.details,
+              prd.reporter_ip::text AS reporter_ip,
+              prd.created_at
+            FROM poll_reports prd
+            WHERE prd.poll_id = p.id
+            ORDER BY prd.created_at DESC
+            LIMIT 10
+          ) report_data
+        ),
+        '[]'::json
+      ) AS reports
+    FROM polls p
+    LEFT JOIN poll_options po ON po.poll_id = p.id
+    LEFT JOIN poll_participations pp ON pp.poll_id = p.id
+    LEFT JOIN poll_reports pr ON pr.poll_id = p.id
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
+    LIMIT 250
+    `
+  );
+
+  return result.rows.map((poll) => ({
+    publicId: poll.public_id,
+    title: poll.title,
+    description: poll.description,
+    creatorName: poll.creator_name,
+    creatorEmail: poll.creator_email,
+    creatorIp: poll.creator_ip,
+    creatorIpExpiresAt: poll.creator_ip_expires_at,
+    status: poll.status,
+    createdAt: poll.created_at,
+    activatedAt: poll.activated_at,
+    blockedAt: poll.blocked_at,
+    blockedReason: poll.blocked_reason,
+    expiresAt: poll.expires_at,
+    optionCount: poll.option_count,
+    participantCount: poll.participant_count,
+    reportCount: poll.report_count,
+    lastReportedAt: poll.last_reported_at,
+    reports: poll.reports.map((report) => ({
+      id: report.id,
+      reporterEmail: report.reporter_email,
+      reason: report.reason,
+      details: report.details,
+      reporterIp: report.reporter_ip,
+      createdAt: report.created_at,
+    })),
+  }));
+}
+
+export async function listIgnoredCreatorEmails() {
+  const result = await pool.query(
+    `
+    SELECT email, reason, created_at
+    FROM ignored_creator_emails
+    ORDER BY created_at DESC
+    LIMIT 250
+    `
+  );
+
+  return result.rows.map((entry) => ({
+    email: entry.email,
+    reason: entry.reason,
+    createdAt: entry.created_at,
+  }));
+}
+
+export async function addIgnoredCreatorEmail({ email, reason }) {
+  const result = await pool.query(
+    `
+    INSERT INTO ignored_creator_emails (email, reason)
+    VALUES ($1, $2)
+    ON CONFLICT (email)
+    DO UPDATE SET reason = EXCLUDED.reason
+    RETURNING email, reason, created_at
+    `,
+    [email, reason || null]
+  );
+
+  const entry = result.rows[0];
+
+  return {
+    email: entry.email,
+    reason: entry.reason,
+    createdAt: entry.created_at,
+  };
+}
+
+export async function removeIgnoredCreatorEmail(email) {
+  const result = await pool.query(
+    `
+    DELETE FROM ignored_creator_emails
+    WHERE email = $1
+    `,
+    [email]
+  );
+
+  return result.rowCount > 0;
+}
+
+export async function updateOperatorPollStatus({ publicId, status, reason }) {
+  const allowedStatuses = new Set(["active", "blocked", "disabled"]);
+
+  if (!allowedStatuses.has(status)) {
+    return null;
+  }
+
+  const result = await pool.query(
+    `
+    UPDATE polls
+    SET status = $2,
+        blocked_at = CASE WHEN $2 = 'blocked' THEN CURRENT_TIMESTAMP ELSE NULL END,
+        blocked_reason = CASE WHEN $2 = 'blocked' THEN $3 ELSE NULL END
+    WHERE public_id = $1
+    RETURNING public_id
+    `,
+    [publicId, status, reason || null]
+  );
+
+  return result.rowCount > 0;
+}
+
+export async function deletePollOperatorByPublicId(publicId) {
+  const result = await pool.query(
+    `
+    DELETE FROM polls
+    WHERE public_id = $1
+    `,
+    [publicId]
+  );
+
+  return result.rowCount > 0;
 }

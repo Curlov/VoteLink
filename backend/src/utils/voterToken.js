@@ -23,5 +23,19 @@ export function hashVoterToken(voterToken) {
     return null;
   }
 
+  return hashToken(normalizedToken);
+}
+
+export function hashToken(token) {
+  if (typeof token !== "string") {
+    return null;
+  }
+
+  const normalizedToken = token.trim();
+
+  if (normalizedToken.length < MIN_TOKEN_LENGTH) {
+    return null;
+  }
+
   return crypto.createHash("sha256").update(normalizedToken).digest("hex");
 }
