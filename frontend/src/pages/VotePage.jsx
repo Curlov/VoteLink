@@ -89,7 +89,6 @@ export function VotePage() {
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [hasJustVoted, setHasJustVoted] = useState(false);
-  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reporterEmail, setReporterEmail] = useState("");
   const [reportReason, setReportReason] = useState("");
@@ -243,7 +242,7 @@ export function VotePage() {
   if (error && !poll) {
     return (
       <main>
-        <p style={{ color: "red" }}>Fehler: {error}</p>
+        <p className="vl-text-error">Fehler: {error}</p>
       </main>
     );
   }
@@ -271,148 +270,55 @@ export function VotePage() {
   return (
     <main>
       {results && (
-        <section
-          style={{
-            maxWidth: "820px",
-            margin: "32px auto",
-            borderRadius: "24px",
-            overflow: "hidden",
-            border: "1px solid #ddd",
-            boxShadow: "0 12px 32px rgba(0, 0, 0, 0.12)",
-            background: "#fff",
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              padding: "28px 36px",
-              background: "#f3f3f3", 
-              borderBottom: "1px solid #ddd",
-              color: "#222",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: "16px",
-              }}
-            >
-              <h2
-                style={{
-                  margin: 0,
-                  flex: "1 1 280px",
-                  color: "#222",
-                  fontSize: "2rem",
-                  lineHeight: "1.15",
-                }}
-              >
-                {results.title}
-              </h2>
+        <section className="vl-panel">
+          <div className="vl-panel-header">
+            <div className="vl-panel-header-row">
+              <h2 className="vl-panel-title">{results.title}</h2>
             </div>
 
             {results.description && (
-              <p
-                style={{
-                  marginTop: "12px",
-                  marginBottom: 0,
-                  color: "#555",
-                  lineHeight: "1.5",
-                }}
-              >
+              <p className="vl-panel-description">
                 {results.description}
               </p>
             )}
 
             {expiresAtDate && (
-              <p
-                style={{
-                  marginTop: "12px",
-                  marginBottom: 0,
-                  color: "#777",
-                  fontSize: "0.9rem",
-                }}
-              >
+              <p className="vl-panel-meta">
                 Laufzeit bis {dateTimeFormat.format(expiresAtDate)}{" "}
                 {!isExpired && `· noch ${remainingTime}`}
               </p>
             )}
-            <div
-              style={{
-                position: "absolute",
-                right: "16px",
-                bottom: "16px",
-              }}
-            >
+            <div className="vl-header-legal">
               <LegalInfo />
             </div>
           </div>
 
-          <div
-            style={{
-              padding: "32px 36px",
-              color: "#222",
-            }}
-          >
-            <h3
-              style={{
-                marginTop: 0,
-                textAlign: "center",
-              }}
-            >
+          <div className="vl-results-body">
+            <h3 className="vl-result-title">
               Aktuelles Zwischenergebnis
             </h3>
 
-            <p
-              style={{
-                textAlign: "center",
-                color: "#666",
-              }}
-            >
+            <p className="vl-caption vl-text-center">
               {results.allowMultipleVotes
                 ? `Teilnehmer: ${results.totalVoters}/${results.maxVoters} · Auswahlen: ${results.totalVotes}`
                 : `Teilnehmer: ${results.totalVoters}/${results.maxVoters}`}
             </p>
 
             {shouldUseCompactResults ? (
-              <div
-                style={{
-                  display: "grid",
-                  gap: "12px",
-                  marginTop: "28px",
-                }}
-              >
+              <div className="vl-compact-results">
                 {results.options.map((option) => (
                   <div key={option.id}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: "16px",
-                        marginBottom: "6px",
-                        fontSize: "0.95rem",
-                      }}
-                    >
+                    <div className="vl-compact-result-row">
                       <span>{option.text}</span>
                       <strong>
                         {option.voteCount} · {option.percentage}%
                       </strong>
                     </div>
-                    <div
-                      style={{
-                        height: "10px",
-                        borderRadius: "999px",
-                        background: "#e5e5e5",
-                        overflow: "hidden",
-                      }}
-                    >
+                    <div className="vl-progress-track">
                       <div
+                        className="vl-progress-fill"
                         style={{
-                          width: `${option.percentage}%`,
-                          height: "100%",
-                          background: "#333",
+                          "--progress-width": `${option.percentage}%`,
                         }}
                       />
                     </div>
@@ -420,26 +326,11 @@ export function VotePage() {
                 ))}
               </div>
             ) : (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  overflowX: "auto",
-                  marginTop: "32px",
-                  paddingBottom: "8px",
-                }}
-              >
+              <div className="vl-bar-chart-scroll">
                 <div
+                  className="vl-bar-chart"
                   style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: `${chartGap}px`,
-                    paddingLeft: `${chartGap}px`,
-                    paddingRight: `${chartGap}px`,
-                    backgroundImage: "linear-gradient(#333, #333)",
-                    backgroundRepeat: "no-repeat",
-                    backgroundSize: "100% 2px",
-                    backgroundPosition: "left 220px",
+                    "--chart-gap": `${chartGap}px`,
                   }}
                 >
                   {results.options.map((option) => {
@@ -449,30 +340,18 @@ export function VotePage() {
                     return (
                       <div
                         key={option.id}
+                        className="vl-bar-column"
                         style={{
-                          width: `${optionWidth}px`,
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          flexShrink: 0,
+                          "--option-width": `${optionWidth}px`,
                         }}
                       >
-                        <div
-                          style={{
-                            height: "220px",
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "end",
-                            justifyContent: "center",
-                          }}
-                        >
+                        <div className="vl-bar-stage">
                           <div
+                            className="vl-bar"
                             style={{
-                              width: `${barWidth}px`,
-                              height: `${barHeight}px`,
-                              background: "#333",
-                              transition: "height 300ms ease",
-                              borderRadius:
+                              "--bar-width": `${barWidth}px`,
+                              "--bar-height": `${barHeight}px`,
+                              "--bar-radius":
                                 barHeight > 0 ? "12px 12px 0 0" : "0",
                             }}
                             title={`${option.voteCount} ${
@@ -484,30 +363,18 @@ export function VotePage() {
                         </div>
 
                         <div
+                          className="vl-bar-value"
                           style={{
-                            width: `${barWidth}px`,
-                            height: "28px",
-                            background: "#333",
-                            color: "#fff",
-                            fontWeight: "700",
-                            fontSize: "0.85rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            borderRadius: "0 0 8px 8px",
+                            "--bar-width": `${barWidth}px`,
                           }}
                         >
                           {option.percentage}%
                         </div>
 
                         <strong
+                          className="vl-bar-label"
                           style={{
-                            width: `${optionWidth}px`,
-                            marginTop: "10px",
-                            textAlign: "center",
-                            minHeight: "40px",
-                            color: "#222",
-                            fontSize: "0.95rem",
+                            "--option-width": `${optionWidth}px`,
                           }}
                         >
                           {option.text}
@@ -520,36 +387,7 @@ export function VotePage() {
             )}
 
             {poll.creatorEmail && (
-              <div
-                style={{
-                  marginTop: "4px",
-                  marginBottom: "-22px",
-                  marginLeft: "-20px",
-                  textAlign: "left",
-                  display: "flex",
-                  gap: "8px",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setIsInfoOpen(true)}
-                  aria-label="Informationen zur Umfrage anzeigen"
-                  title="Informationen zur Umfrage"
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    borderRadius: "999px",
-                    border: "1px solid #ddd",
-                    background: "#f7f7f7",
-                    color: "#aaa",
-                    cursor: "pointer",
-                    fontSize: "0.78rem",
-                    fontWeight: "700",
-                    lineHeight: "1",
-                  }}
-                >
-                  i
-                </button>
+              <div className="vl-report-row">
                 <button
                   type="button"
                   onClick={() => {
@@ -558,18 +396,7 @@ export function VotePage() {
                   }}
                   aria-label="Umfrage melden"
                   title="Umfrage melden"
-                  style={{
-                    minWidth: "76px",
-                    height: "24px",
-                    borderRadius: "999px",
-                    border: "1px solid #ddd",
-                    background: "#f7f7f7",
-                    color: "#777",
-                    cursor: "pointer",
-                    fontSize: "0.78rem",
-                    fontWeight: "400",
-                    lineHeight: "1",
-                  }}
+                  className="vl-report-button"
                 >
                   Melden
                 </button>
@@ -577,70 +404,56 @@ export function VotePage() {
             )}
           </div>
 
-          <div
-            style={{
-              padding: "28px 36px",
-              background: "#f3f3f3",
-              borderTop: "1px solid #ddd",
-              color: "#222",
-            }}
-          >
+          <div className="vl-vote-panel">
             {hasJustVoted ? (
-              <div style={{ textAlign: "center" }}>
-                <h3 style={{ marginTop: 0 }}>
+              <div className="vl-state-message">
+                <h3>
                   Vielen Dank für deine Stimme!
                 </h3>
-                <p style={{ marginBottom: 0 }}>
+                <p>
                   Das Ergebnis wurde aktualisiert.
                 </p>
               </div>
             ) : hasVoted ? (
-              <div style={{ textAlign: "center" }}>
-                <h3 style={{ marginTop: 0 }}>
+              <div className="vl-state-message">
+                <h3>
                   Du hast deine Stimme bereits abgegeben.
                 </h3>
-                <p style={{ marginBottom: 0 }}>Vielen Dank.</p>
+                <p>Vielen Dank.</p>
                 {import.meta.env.DEV && (
                   <button
                     type="button"
                     onClick={handleResetLocalVoteForTesting}
-                    className="vl-button vl-button-secondary"
-                    style={{ marginTop: "16px" }}
+                    className="vl-button vl-button-secondary vl-dev-button"
                   >
                     Teststimme in diesem Browser zurücksetzen
                   </button>
                 )}
               </div>
             ) : isExpired ? (
-              <div style={{ textAlign: "center" }}>
-                <h3 style={{ marginTop: 0 }}>Diese Abstimmung ist beendet.</h3>
-                <p style={{ marginBottom: 0 }}>
+              <div className="vl-state-message">
+                <h3>Diese Abstimmung ist beendet.</h3>
+                <p>
                   Stimmen können nicht mehr abgegeben werden.
                 </p>
               </div>
             ) : isParticipantLimitReached ? (
-              <div style={{ textAlign: "center" }}>
-                <h3 style={{ marginTop: 0 }}>
+              <div className="vl-state-message">
+                <h3>
                   Das Teilnehmerlimit ist erreicht.
                 </h3>
-                <p style={{ marginBottom: 0 }}>
+                <p>
                   Diese kostenlose Abstimmung nimmt keine weiteren Antworten
                   entgegen.
                 </p>
               </div>
             ) : (
               <>
-                <div style={{ textAlign: "center" }}>
-                  <h3 style={{ marginTop: 0, marginBottom: "4px" }}>
+                <div className="vl-choice-header">
+                  <h3>
                     Deine Auswahl
                   </h3>
-                  <p
-                    style={{
-                      color: "#666",
-                      fontSize: "0.9rem",
-                      marginBottom: 0,
-                    }}
-                  >
+                  <p className="vl-caption">
                     {poll.allowMultipleVotes
                       ? "Mehrere Optionen möglich"
                       : "Eine Option wählen"}
@@ -649,12 +462,7 @@ export function VotePage() {
 
                 <form onSubmit={handleSubmit}>
                   {!poll.isAnonymous && (
-                    <div
-                      style={{
-                        marginBottom: "16px",
-                        textAlign: "center",
-                      }}
-                    >
+                    <div className="vl-voter-name-field">
                       <label>Dein Name</label>
                       <br />
                       <input
@@ -662,25 +470,12 @@ export function VotePage() {
                         value={voterName}
                         onChange={(event) => setVoterName(event.target.value)}
                         placeholder="Thomas"
-                        style={{
-                          marginTop: "6px",
-                          padding: "8px 12px",
-                          borderRadius: "999px",
-                          border: "1px solid #ccc",
-                        }}
+                        className="vl-voter-name-input"
                       />
                     </div>
                   )}
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      justifyContent: "center",
-                      gap: "10px",
-                      marginTop: "16px",
-                    }}
-                  >
+                  <div className="vl-pill-group">
                     {poll.options.map((option) => {
                       const optionId = String(option.id);
                       const isSelected = selectedOptionIds.includes(optionId);
@@ -691,16 +486,6 @@ export function VotePage() {
                           className={`vl-button-pill ${
                             isSelected ? "vl-button-pill-selected" : ""
                           }`}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "6px",
-                            minWidth: "88px",
-                            maxWidth: "100%",
-                            transition:
-                              "background 160ms ease, color 160ms ease, border 160ms ease",
-                          }}
                         >
                           <input
                             type={
@@ -710,36 +495,19 @@ export function VotePage() {
                             value={option.id}
                             checked={isSelected}
                             onChange={() => handleOptionSelection(optionId)}
-                            style={{
-                              display: "none",
-                            }}
                           />
 
-                          <span
-                            style={{
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {option.text}
-                          </span>
+                          <span>{option.text}</span>
                         </label>
                       );
                     })}
                   </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                    }}
-                  >
+                  <div className="vl-action-center">
                     <button
                       type="submit"
                       disabled={isVoting}
-                      className="vl-button vl-button-large"
-                      style={{ marginTop: "26px" }}
+                      className="vl-button vl-button-large vl-submit-spaced"
                     >
                       {isVoting ? "Stimme wird gespeichert..." : "Abstimmen"}
                     </button>
@@ -749,81 +517,13 @@ export function VotePage() {
             )}
 
             {error && (
-              <p
-                style={{
-                  color: "red",
-                  textAlign: "center",
-                  marginBottom: 0,
-                }}
-              >
+              <p className="vl-text-error vl-text-center">
                 Fehler: {error}
               </p>
             )}
 
           </div>
         </section>
-      )}
-
-      {isInfoOpen && poll?.creatorEmail && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="poll-info-title"
-          onClick={() => setIsInfoOpen(false)}
-          className="vl-modal-backdrop"
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="vl-modal"
-          >
-            <div className="vl-modal-header">
-              <h2 id="poll-info-title">
-                Informationen zur Umfrage
-              </h2>
-            </div>
-
-            <div className="vl-modal-body">
-              <p>
-                Erstellt von:{" "}
-                <strong style={{ color: "#222" }}>
-                  {poll.creatorName || "Nicht angegeben"}
-                </strong>
-              </p>
-              <p>
-                Kontakt für Rückfragen:{" "}
-                <a href={`mailto:${poll.creatorEmail}`}>{poll.creatorEmail}</a>
-              </p>
-              <p>
-                VoteLink speichert in diesem Browser einen zufällig erzeugten
-                Teilnahme-Token. Auf dem Server wird nur ein Hash dieses Tokens
-                gespeichert, damit Mehrfachabstimmungen erschwert werden.
-              </p>
-              <p>
-                Diese kostenlose Abstimmung erlaubt bis zu {poll.maxVoters}
-                Teilnehmer. Danach nimmt sie keine weiteren Antworten entgegen.
-              </p>
-              <p>
-                {poll.isAnonymous
-                  ? "Diese Abstimmung ist anonym. Dein Name wird nicht abgefragt."
-                  : "Diese Abstimmung fragt deinen Namen ab. Der Ersteller kann die Namen im Adminbereich sehen."}
-              </p>
-              <p>
-                Nach Ablauf wird die Abstimmung nach der Aufbewahrungsfrist
-                automatisch gelöscht.
-              </p>
-            </div>
-
-            <div className="vl-modal-footer">
-              <button
-                type="button"
-                onClick={() => setIsInfoOpen(false)}
-                className="vl-button"
-              >
-                Schließen
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {isReportOpen && (
@@ -845,10 +545,10 @@ export function VotePage() {
             <form onSubmit={handleReportSubmit}>
               <div className="vl-modal-body">
                 {reportMessage ? (
-                  <p style={{ color: "#15803d" }}>{reportMessage}</p>
+                  <p className="vl-text-success">{reportMessage}</p>
                 ) : (
                   <>
-                    <label style={{ color: "#333", fontWeight: "700" }}>
+                    <label className="vl-label">
                       Deine E-Mail
                       <input
                         type="email"
@@ -858,11 +558,10 @@ export function VotePage() {
                         }
                         required
                         className="vl-input"
-                        style={{ width: "100%", marginTop: "6px" }}
                       />
                     </label>
 
-                    <label style={{ color: "#333", fontWeight: "700" }}>
+                    <label className="vl-label">
                       Grund
                       <select
                         value={reportReason}
@@ -871,7 +570,6 @@ export function VotePage() {
                         }
                         required
                         className="vl-input"
-                        style={{ width: "100%", marginTop: "6px" }}
                       >
                         <option value="">Bitte auswählen</option>
                         <option value="Rechtswidrige Inhalte">
@@ -892,20 +590,14 @@ export function VotePage() {
                       </select>
                     </label>
 
-                    <label style={{ color: "#333", fontWeight: "700" }}>
+                    <label className="vl-label">
                       Details
                       <textarea
                         value={reportDetails}
                         onChange={(event) =>
                           setReportDetails(event.target.value)
                         }
-                        className="vl-input"
-                        style={{
-                          width: "100%",
-                          minHeight: "120px",
-                          marginTop: "6px",
-                          resize: "vertical",
-                        }}
+                        className="vl-input vl-textarea"
                       />
                     </label>
                   </>
@@ -916,8 +608,7 @@ export function VotePage() {
                 <button
                   type="button"
                   onClick={() => setIsReportOpen(false)}
-                  className="vl-button vl-button-secondary"
-                  style={{ marginRight: "8px" }}
+                  className="vl-button vl-button-secondary vl-modal-action-spaced"
                 >
                   Schließen
                 </button>

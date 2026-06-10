@@ -151,7 +151,9 @@ code {
 }
 
 .vl-button-danger {
-  background: #991b1b;
+  border: 1px solid #f3c7c7;
+  background: #fff7f7;
+  color: #991b1b;
 }
 
 .vl-button-link {
@@ -165,6 +167,10 @@ code {
   font-size: 1.05rem;
 }
 
+.vl-button-spaced {
+  margin-top: 14px;
+}
+
 .vl-button-small {
   min-height: 24px;
   min-width: 78px;
@@ -175,6 +181,7 @@ code {
 
 .vl-input {
   box-sizing: border-box;
+  width: 100%;
   min-height: 42px;
   padding: 10px 14px;
   border: 1px solid #ccc;
@@ -182,6 +189,388 @@ code {
   background: #fff;
   color: #222;
   font: inherit;
+}
+
+.vl-field {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px 16px;
+  border: 1px solid #ccc;
+  border-radius: 14px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+}
+
+.vl-textarea {
+  min-height: 130px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.vl-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #333;
+  font-weight: 700;
+}
+
+.vl-label .vl-input {
+  margin-top: 6px;
+}
+
+.vl-form {
+  display: grid;
+  gap: 20px;
+  padding: 32px 36px;
+}
+
+.vl-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.vl-stack-sm {
+  display: grid;
+  gap: 10px;
+}
+
+.vl-option-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vl-option-field {
+  flex: 1 1 240px;
+  margin-top: 0;
+}
+
+.vl-checkbox-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.vl-checkbox-card-top {
+  align-items: flex-start;
+  line-height: 1.45;
+}
+
+.vl-checkbox-card-top input {
+  margin-top: 4px;
+}
+
+.vl-terms-check {
+  align-items: center;
+  padding-block: 10px;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.vl-terms-check input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.vl-section-title {
+  margin: 0 0 12px;
+}
+
+.vl-heading-reset {
+  margin: 0;
+}
+
+.vl-panel-intro {
+  margin-top: 10px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.vl-panel-title {
+  flex: 1 1 280px;
+  margin: 0;
+  color: #222;
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
+.vl-panel-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.vl-header-legal {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+}
+
+.vl-result-panel {
+  display: grid;
+  gap: 18px;
+  padding: 32px 36px;
+  text-align: center;
+}
+
+.vl-panel-footer {
+  display: flex;
+  justify-content: center;
+  padding: 28px 36px;
+  border-top: 1px solid #ddd;
+  background: #f3f3f3;
+}
+
+.vl-error-panel {
+  padding: 28px 36px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+}
+
+.vl-text-muted {
+  color: #555;
+}
+
+.vl-text-subtle {
+  color: #777;
+}
+
+.vl-text-success {
+  color: #15803d;
+}
+
+.vl-text-error {
+  color: #991b1b;
+}
+
+.vl-text-center {
+  text-align: center;
+}
+
+.vl-caption {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.vl-caption-tight {
+  margin-top: -6px;
+  margin-bottom: 12px;
+}
+
+.vl-link-label {
+  margin-bottom: 4px;
+}
+
+.vl-link-help {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.vl-panel-description {
+  margin-top: 12px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.vl-panel-meta {
+  margin-top: 12px;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+.vl-results-body {
+  padding: 32px 36px;
+  color: #222;
+}
+
+.vl-result-title {
+  margin-top: 0;
+  text-align: center;
+}
+
+.vl-compact-results {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.vl-compact-result-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+
+.vl-progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e5e5;
+}
+
+.vl-progress-fill {
+  width: var(--progress-width);
+  height: 100%;
+  background: #333;
+}
+
+.vl-bar-chart-scroll {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  margin-top: 32px;
+  padding-bottom: 8px;
+}
+
+.vl-bar-chart {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--chart-gap);
+  padding-inline: var(--chart-gap);
+  background-image: linear-gradient(#333, #333);
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  background-position: left 220px;
+}
+
+.vl-bar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: var(--option-width);
+}
+
+.vl-bar-stage {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  width: 100%;
+  height: 220px;
+}
+
+.vl-bar {
+  width: var(--bar-width);
+  height: var(--bar-height);
+  border-radius: var(--bar-radius);
+  background: #333;
+  transition: height 300ms ease;
+}
+
+.vl-bar-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bar-width);
+  height: 28px;
+  border-radius: 0 0 8px 8px;
+  background: #333;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.vl-bar-label {
+  width: var(--option-width);
+  min-height: 40px;
+  margin-top: 10px;
+  color: #222;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.vl-report-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: -22px;
+  margin-left: -20px;
+  text-align: left;
+}
+
+.vl-report-button {
+  min-width: 76px;
+  height: 24px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #f7f7f7;
+  color: #777;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.vl-vote-panel {
+  padding: 28px 36px;
+  border-top: 1px solid #ddd;
+  background: #f3f3f3;
+  color: #222;
+}
+
+.vl-state-message,
+.vl-choice-header,
+.vl-voter-name-field,
+.vl-action-center {
+  text-align: center;
+}
+
+.vl-state-message h3,
+.vl-choice-header h3 {
+  margin-top: 0;
+}
+
+.vl-state-message p {
+  margin-bottom: 0;
+}
+
+.vl-choice-header h3 {
+  margin-bottom: 4px;
+}
+
+.vl-voter-name-field {
+  margin-bottom: 16px;
+}
+
+.vl-voter-name-input {
+  margin-top: 6px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+}
+
+.vl-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.vl-submit-spaced {
+  margin-top: 26px;
+}
+
+.vl-dev-button {
+  margin-top: 16px;
+}
+
+.vl-modal-action-spaced {
+  margin-right: 8px;
 }
 
 .vl-panel {
@@ -201,6 +590,7 @@ code {
 }
 
 .vl-panel-header {
+  position: relative;
   padding: 28px 36px;
   border-bottom: 1px solid #ddd;
   background: #f3f3f3;
@@ -319,18 +709,35 @@ code {
   background: #fff;
   color: #222;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: 0.9rem;
+  font-weight: 700;
   line-height: 1.2;
+  min-width: 88px;
+  max-width: 100%;
   min-height: 32px;
   padding: 6px 16px;
+  transition: background 160ms ease, color 160ms ease, border 160ms ease;
+}
+
+.vl-button-pill input {
+  display: none;
+}
+
+.vl-button-pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .vl-button-pill-selected {
   border-color: #15803d;
   background: #16a34a;
   color: #fff;
-  font-weight: 700;
 }
 
 .vl-legal-dock {

@@ -68,147 +68,61 @@ export function CreatePollPage() {
     }
   }
 
-  const fieldStyle = {
-    width: "100%",
-    boxSizing: "border-box",
-    marginTop: "6px",
-    padding: "12px 16px",
-    borderRadius: "14px",
-    border: "1px solid #ccc",
-    background: "#fff",
-    color: "#222",
-    font: "inherit",
-  };
-
-  const labelStyle = {
-    display: "block",
-    color: "#333",
-    fontWeight: "700",
-    marginBottom: "4px",
-  };
-
   return (
     <main>
-      <section
-        style={{
-          maxWidth: "820px",
-          margin: "32px auto",
-          borderRadius: "24px",
-          overflow: "hidden",
-          border: "1px solid #ddd",
-          boxShadow: "0 12px 32px rgba(0, 0, 0, 0.12)",
-          background: "#fff",
-          color: "#222",
-          textAlign: "left",
-        }}
-      >
-        <div
-          style={{
-            position: "relative",
-            padding: "28px 36px",
-            background: "#f3f3f3",
-            borderBottom: "1px solid #ddd",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "16px",
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                flex: "1 1 280px",
-                color: "#222",
-                fontSize: "2rem",
-                lineHeight: "1.15",
-              }}
-            >
-              Neue Abstimmung erstellen
-            </h2>
+      <section className="vl-panel">
+        <div className="vl-panel-header">
+          <div className="vl-panel-header-row">
+            <h2 className="vl-panel-title">Neue Abstimmung erstellen</h2>
           </div>
-          <p
-            style={{
-              marginTop: "10px",
-              color: "#555",
-              lineHeight: "1.5",
-            }}
-          >
+          <p className="vl-panel-intro">
             Frage eintragen, Optionen ergänzen und den Link teilen.
           </p>
-          <div
-            style={{
-              position: "absolute",
-              right: "16px",
-              bottom: "16px",
-            }}
-          >
+          <div className="vl-header-legal">
             <LegalInfo />
           </div>
         </div>
 
         {result ? (
           <>
-            <div
-              style={{
-                padding: "32px 36px",
-                display: "grid",
-                gap: "18px",
-                textAlign: "center",
-              }}
-            >
-              <h3 style={{ margin: 0 }}>
+            <div className="vl-result-panel">
+              <h3 className="vl-heading-reset">
                 {result.poll.status === "pending"
                   ? "Bitte E-Mail bestätigen"
                   : "Abstimmung wurde erstellt"}
               </h3>
 
               {result.poll.status === "pending" && (
-                <p style={{ color: "#555", margin: 0 }}>
+                <p className="vl-text-muted">
                   Die Abstimmung wird erst öffentlich erreichbar, nachdem der
                   Aktivierungslink aus der E-Mail geöffnet wurde.
                 </p>
               )}
 
-              <div>
-                <p style={{ color: "#555", marginBottom: "4px" }}>
-                  Laufzeit bis
-                </p>
-                <strong>
-                  {new Intl.DateTimeFormat("de-DE", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  }).format(new Date(result.poll.expiresAt))}
-                </strong>
-              </div>
-
               {result.emailDelivery?.sent && (
-                <p style={{ color: "#15803d", margin: 0 }}>
-                  Die Links wurden an {result.poll.creatorEmail} gesendet.
+                <p className="vl-text-success">
+                  Die Aktivierung und alle Links wurden an{" "}
+                  {result.poll.creatorEmail} gesendet.
                 </p>
               )}
 
               {result.emailDelivery?.skipped && (
-                <p style={{ color: "#777", margin: 0 }}>
+                <p className="vl-text-subtle">
                   Der E-Mail-Versand ist lokal nicht konfiguriert.
                 </p>
               )}
 
               {result.emailDelivery?.attempted &&
                 !result.emailDelivery?.sent && (
-                  <p style={{ color: "#991b1b", margin: 0 }}>
+                  <p className="vl-text-error">
                     Die E-Mail konnte nicht gesendet werden. Die Links stehen
                     hier trotzdem bereit.
                   </p>
                 )}
 
-              {result.links.activationUrl && (
+              {!result.emailDelivery?.sent && result.links.activationUrl && (
                 <div>
-                  <p style={{ color: "#777", marginBottom: "4px" }}>
+                  <p className="vl-text-subtle vl-link-label">
                     Lokaler Aktivierungslink
                   </p>
                   <a href={result.links.activationUrl}>
@@ -217,127 +131,101 @@ export function CreatePollPage() {
                 </div>
               )}
 
-              {result.links.publicUrl && (
-              <div>
-                <p style={{ color: "#555", marginBottom: "4px" }}>
-                  Öffentlicher Link
-                </p>
-                <p
-                  style={{
-                    color: "#777",
-                    fontSize: "0.9rem",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Diesen Link kannst du an Teilnehmer weitergeben.
-                </p>
-                <a href={result.links.publicUrl}>
-                  {`${window.location.origin}${result.links.publicUrl}`}
-                </a>
-              </div>
+              {!result.emailDelivery?.sent && result.links.publicUrl && (
+                <div>
+                  <p className="vl-text-muted vl-link-label">
+                    Öffentlicher Link
+                  </p>
+                  <p className="vl-text-subtle vl-link-help">
+                    Diesen Link kannst du an Teilnehmer weitergeben.
+                  </p>
+                  <a href={result.links.publicUrl}>
+                    {`${window.location.origin}${result.links.publicUrl}`}
+                  </a>
+                </div>
               )}
 
-              <div>
-                <p style={{ color: "#555", marginBottom: "4px" }}>
-                  Admin-Link
-                </p>
-                <p
-                  style={{
-                    color: "#991b1b",
-                    fontSize: "0.9rem",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Nicht weitergeben. Mit diesem Link kann die Abstimmung
-                  verwaltet oder gelöscht werden.
-                </p>
-                <a href={result.links.adminUrl}>
-                  {`${window.location.origin}${result.links.adminUrl}`}
-                </a>
-              </div>
+              {!result.emailDelivery?.sent && result.links.adminUrl && (
+                <div>
+                  <p className="vl-text-muted vl-link-label">
+                    Admin-Link
+                  </p>
+                  <p className="vl-text-error vl-link-help">
+                    Nicht weitergeben. Mit diesem Link kann die Abstimmung
+                    verwaltet oder gelöscht werden.
+                  </p>
+                  <a href={result.links.adminUrl}>
+                    {`${window.location.origin}${result.links.adminUrl}`}
+                  </a>
+                </div>
+              )}
             </div>
-
           </>
         ) : (
           <>
             <form
               id="create-poll-form"
               onSubmit={handleSubmit}
-              style={{
-                padding: "32px 36px",
-                display: "grid",
-                gap: "20px",
-              }}
+              className="vl-form"
             >
               <div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                    gap: "14px",
-                  }}
-                >
+                <div className="vl-form-grid">
                   <div>
-                    <label style={labelStyle}>Dein Name</label>
+                    <label className="vl-label">Dein Name</label>
                     <input
                       type="text"
                       value={creatorName}
                       onChange={(event) => setCreatorName(event.target.value)}
                       placeholder="Name"
                       required
-                      style={fieldStyle}
+                      className="vl-field"
                     />
                   </div>
 
                   <div>
-                    <label style={labelStyle}>Deine E-Mail</label>
+                    <label className="vl-label">Deine E-Mail</label>
                     <input
                       type="email"
                       value={creatorEmail}
                       onChange={(event) => setCreatorEmail(event.target.value)}
                       placeholder="name@example.com"
                       required
-                      style={fieldStyle}
+                      className="vl-field"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label style={labelStyle}>Titel</label>
+                <label className="vl-label">Titel</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   placeholder="Gib deiner Umfrage einen Titel"
                   required
-                  style={fieldStyle}
+                  className="vl-field"
                 />
               </div>
 
               <div>
-                <label style={labelStyle}>Beschreibung</label>
+                <label className="vl-label">Beschreibung</label>
                 <textarea
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder="Optionaler Beschreibungstext"
-                  style={{
-                    ...fieldStyle,
-                    minHeight: "130px",
-                    resize: "vertical",
-                    lineHeight: "1.5",
-                  }}
+                  className="vl-field vl-textarea"
                 />
               </div>
 
               <div>
-                <label style={labelStyle}>Laufzeit</label>
+                <label className="vl-label">Laufzeit</label>
                 <select
                   value={durationDays}
                   onChange={(event) =>
                     setDurationDays(Number(event.target.value))
                   }
-                  style={fieldStyle}
+                  className="vl-field"
                 >
                   <option value={1}>1 Tag</option>
                   <option value={7}>1 Woche</option>
@@ -346,24 +234,8 @@ export function CreatePollPage() {
                 </select>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gap: "10px",
-                }}
-              >
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "12px 16px",
-                    borderRadius: "16px",
-                    border: "1px solid #ddd",
-                    background: "#fafafa",
-                    cursor: "pointer",
-                  }}
-                >
+              <div className="vl-stack-sm">
+                <label className="vl-checkbox-card">
                   <input
                     type="checkbox"
                     checked={isAnonymous}
@@ -372,18 +244,7 @@ export function CreatePollPage() {
                   Anonyme Abstimmung
                 </label>
 
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "12px 16px",
-                    borderRadius: "16px",
-                    border: "1px solid #ddd",
-                    background: "#fafafa",
-                    cursor: "pointer",
-                  }}
-                >
+                <label className="vl-checkbox-card">
                   <input
                     type="checkbox"
                     checked={allowMultipleVotes}
@@ -396,32 +257,19 @@ export function CreatePollPage() {
               </div>
 
               <div>
-                <h3 style={{ marginTop: 0, marginBottom: "12px" }}>
+                <h3 className="vl-section-title">
                   Optionen
                 </h3>
-                <p
-                  style={{
-                    color: "#666",
-                    fontSize: "0.9rem",
-                    lineHeight: "1.4",
-                    marginTop: "-6px",
-                    marginBottom: "12px",
-                  }}
-                >
+                <p className="vl-caption vl-caption-tight">
                   Kostenlose Abstimmungen können bis zu{" "}
                   {FREE_POLL_OPTION_LIMIT} Optionen enthalten.
                 </p>
 
-                <div style={{ display: "grid", gap: "10px" }}>
+                <div className="vl-stack-sm">
                   {options.map((option, index) => (
                     <div
                       key={index}
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
+                      className="vl-option-row"
                     >
                       <input
                         type="text"
@@ -430,11 +278,7 @@ export function CreatePollPage() {
                           handleOptionChange(index, event.target.value)
                         }
                         placeholder={`Option ${index + 1}`}
-                        style={{
-                          ...fieldStyle,
-                          flex: "1 1 240px",
-                          marginTop: 0,
-                        }}
+                        className="vl-field vl-option-field"
                       />
 
                       <button
@@ -442,9 +286,6 @@ export function CreatePollPage() {
                         onClick={() => removeOption(index)}
                         disabled={options.length <= 2}
                         className="vl-button vl-button-secondary"
-                        style={{
-                          opacity: options.length <= 2 ? 0.45 : 1,
-                        }}
                       >
                         Entfernen
                       </button>
@@ -456,11 +297,7 @@ export function CreatePollPage() {
                   type="button"
                   onClick={addOption}
                   disabled={options.length >= FREE_POLL_OPTION_LIMIT}
-                  className="vl-button vl-button-secondary"
-                  style={{
-                    marginTop: "14px",
-                    opacity: options.length >= FREE_POLL_OPTION_LIMIT ? 0.55 : 1,
-                  }}
+                  className="vl-button vl-button-secondary vl-button-spaced"
                 >
                   {options.length >= FREE_POLL_OPTION_LIMIT
                     ? "Maximale Optionen erreicht"
@@ -468,19 +305,7 @@ export function CreatePollPage() {
                 </button>
               </div>
 
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "10px",
-                  padding: "12px 16px",
-                  borderRadius: "16px",
-                  border: "1px solid #ddd",
-                  background: "#fafafa",
-                  cursor: "pointer",
-                  lineHeight: "1.45",
-                }}
-              >
+              <label className="vl-checkbox-card vl-terms-check">
                 <input
                   type="checkbox"
                   checked={hasAcceptedRules}
@@ -488,22 +313,12 @@ export function CreatePollPage() {
                     setHasAcceptedRules(event.target.checked)
                   }
                   required
-                  style={{ marginTop: "4px" }}
                 />
-                Ich bin für die Inhalte verantwortlich und bestätige, dass die
-                Abstimmung geltendes Recht sowie die Nutzungsregeln einhält.
+                Ich akzeptiere die AGB.
               </label>
             </form>
 
-            <div
-              style={{
-                padding: "28px 36px",
-                background: "#f3f3f3",
-                borderTop: "1px solid #ddd",
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
+            <div className="vl-panel-footer">
               <button
                 type="submit"
                 form="create-poll-form"
@@ -515,14 +330,8 @@ export function CreatePollPage() {
             </div>
 
             {error && (
-              <div
-                style={{
-                  padding: "28px 36px",
-                  background: "#fff",
-                  borderTop: "1px solid #ddd",
-                }}
-              >
-                <p style={{ color: "red", textAlign: "center" }}>
+              <div className="vl-error-panel">
+                <p className="vl-text-error vl-text-center">
                   Fehler: {error}
                 </p>
               </div>

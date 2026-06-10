@@ -129,11 +129,13 @@ export async function createPollController(req, res) {
       };
     }
 
+    const includeLinksInResponse = !emailDelivery.sent;
+
     res.status(201).json({
       message: "Abstimmung wurde erstellt.",
       poll: {
         publicId: poll.public_id,
-        adminToken: poll.admin_token,
+        adminToken: includeLinksInResponse ? poll.admin_token : null,
         status: poll.status,
         title: poll.title,
         description: poll.description,
@@ -145,10 +147,13 @@ export async function createPollController(req, res) {
         expiresAt: poll.expires_at,
       },
       links: {
-        publicUrl: poll.status === "active" ? `/p/${poll.public_id}` : null,
-        adminUrl: `/admin/${poll.admin_token}`,
+        publicUrl:
+          includeLinksInResponse && poll.status === "active"
+            ? `/p/${poll.public_id}`
+            : null,
+        adminUrl: includeLinksInResponse ? `/admin/${poll.admin_token}` : null,
         activationUrl:
-          emailDelivery.skipped && poll.activation_token
+          includeLinksInResponse && poll.activation_token
             ? `/activate/${poll.activation_token}`
             : null,
       },

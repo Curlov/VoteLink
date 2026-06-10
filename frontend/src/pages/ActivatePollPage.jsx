@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { activatePoll } from "../api/pollsApi";
 
@@ -6,9 +6,33 @@ export function ActivatePollPage() {
   const { activationToken } = useParams();
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const activatedTokenRef = useRef(null);
 
-  async function handleActivate() {
+  useEffect(() => {
+    if (activatedTokenRef.current === activationToken) {
+      return;
+    }
+
+    activatedTokenRef.current = activationToken;
+
+    async function activate() {
+      try {
+        setError("");
+        setIsLoading(true);
+        const response = await activatePoll(activationToken);
+        setResult(response);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    activate();
+  }, [activationToken]);
+
+  async function handleRetry() {
     try {
       setError("");
       setIsLoading(true);
@@ -21,42 +45,45 @@ export function ActivatePollPage() {
     }
   }
 
-
   return (
     <main>
       <section className="vl-panel">
         <div className="vl-panel-header">
-          <h2>Abstimmung aktivieren</h2>
+          <h2>Abstimmung freischalten</h2>
         </div>
 
         <div className="vl-panel-body">
-          {!result && (
+          {isLoading && (
+            <p className="vl-text-muted">
+              Die Abstimmung wird freigeschaltet...
+            </p>
+          )}
+
+          {!isLoading && error && (
             <>
-              <p style={{ color: "#555" }}>
-                Bestätige deine E-Mail-Adresse, um die Abstimmung öffentlich
-                freizuschalten.
+              <p className="vl-text-error">Fehler: {error}</p>
+              <p className="vl-text-muted">
+                Bitte versuche es erneut oder öffne den Aktivierungslink aus
+                deiner E-Mail noch einmal.
               </p>
               <button
                 type="button"
-                onClick={handleActivate}
-                disabled={isLoading}
+                onClick={handleRetry}
                 className="vl-button"
               >
-                {isLoading ? "Aktiviere..." : "Abstimmung aktivieren"}
+                Erneut versuchen
               </button>
             </>
           )}
 
-          {error && <p style={{ color: "#991b1b" }}>Fehler: {error}</p>}
-
-          {result && (
+          {!isLoading && result && (
             <>
-              <h3 style={{ margin: 0 }}>{result.message}</h3>
-              <p style={{ color: "#555" }}>
-                Die Abstimmung ist jetzt öffentlich erreichbar.
-              </p>
-              <p>
-                <a href={result.links.publicUrl}>Zur Abstimmung</a>
+              <h3 style={{ margin: 0 }}>
+                Vielen Dank, Ihre Umfrage ist jetzt freigeschaltet.
+              </h3>
+              <p className="vl-text-muted">
+                Über die Links in Ihrer E-Mail können Sie Ihre Umfrage jetzt
+                erreichen oder teilen.
               </p>
             </>
           )}

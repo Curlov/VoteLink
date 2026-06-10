@@ -62,7 +62,11 @@ export function OperatorAdminPage() {
   }
 
   useEffect(() => {
-    loadPolls();
+    async function loadInitialPolls() {
+      await loadPolls(token);
+    }
+
+    loadInitialPolls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
