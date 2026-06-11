@@ -358,10 +358,10 @@ export function OperatorAdminPage() {
                       )}`}
                     {poll.creatorIp && ` · IP: ${poll.creatorIp}`}
                   </p>
-                  <p>
+                  <p className="vl-admin-poll-meta">
                     Status: <strong>{poll.status}</strong> · Teilnehmer:{" "}
                     {poll.participantCount} · Optionen: {poll.optionCount} ·
-                    Meldungen: {poll.reportCount}
+                    <span>Meldungen: {poll.reportCount}</span>
                     {poll.reportCount > 0 && (
                       <>
                         {" "}
@@ -383,7 +383,7 @@ export function OperatorAdminPage() {
                 </div>
 
                 <div className="vl-admin-row-actions">
-                  <div className="vl-admin-row-actions-primary">
+                  <div className="vl-admin-row-actions-line">
                     <a
                       href={`/p/${poll.publicId}`}
                       target="_blank"
@@ -416,7 +416,7 @@ export function OperatorAdminPage() {
                     </button>
                   </div>
 
-                  <div className="vl-admin-row-actions-danger">
+                  <div className="vl-admin-row-actions-line">
                     <button
                       type="button"
                       className={getStatusButtonClass(
@@ -435,9 +435,6 @@ export function OperatorAdminPage() {
                     >
                       Löschen
                     </button>
-                  </div>
-
-                  <div className="vl-admin-row-actions-danger">
                     <button
                       type="button"
                       disabled={ignoredEmailSet.has(poll.creatorEmail)}

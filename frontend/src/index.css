@@ -617,9 +617,16 @@ code {
 
 .vl-admin-row-actions {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   justify-items: end;
   align-content: start;
+}
+
+.vl-admin-row-actions-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .vl-admin-row-actions-primary,
@@ -631,7 +638,15 @@ code {
 }
 
 .vl-admin-action-button {
-  min-width: 142px;
+  min-width: 128px;
+}
+
+.vl-admin-poll-meta {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 4px;
+  row-gap: 2px;
+  align-items: center;
 }
 
 .vl-inline-action {
@@ -1031,7 +1046,8 @@ code {
   }
 
   .vl-admin-row-actions-primary,
-  .vl-admin-row-actions-danger {
+  .vl-admin-row-actions-danger,
+  .vl-admin-row-actions-line {
     justify-content: flex-start;
   }
 
