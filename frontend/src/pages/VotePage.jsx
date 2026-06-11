@@ -63,17 +63,16 @@ function formatRemainingTime(expiresAt, now) {
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-
-  if (days > 0) {
-    return `${days} T ${String(hours).padStart(2, "0")} Std ${String(
-      minutes
-    ).padStart(2, "0")} Min`;
-  }
-
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+  const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
     2,
     "0"
   )}:${String(seconds).padStart(2, "0")}`;
+
+  if (days > 0) {
+    return `${days}T - ${time}`;
+  }
+
+  return time;
 }
 
 export function VotePage() {

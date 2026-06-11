@@ -314,12 +314,13 @@ code {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+  padding-right: 118px;
 }
 
 .vl-header-legal {
   position: absolute;
-  right: 16px;
-  bottom: 16px;
+  top: 12px;
+  right: 12px;
 }
 
 .vl-result-panel {
@@ -872,8 +873,12 @@ code {
   }
 
   .vl-header-legal {
-    position: static;
-    margin-top: 12px;
+    top: 10px;
+    right: 10px;
+  }
+
+  .vl-panel-header-row {
+    padding-right: 104px;
   }
 
   .vl-legal-dock {
