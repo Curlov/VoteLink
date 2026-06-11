@@ -988,7 +988,7 @@ code {
   }
 
   .vl-bar-chart[data-option-count="6"] {
-    gap: 5px;
+    gap: 3px;
     padding-inline: 5px;
   }
 
@@ -999,7 +999,7 @@ code {
 
   .vl-bar-chart[data-option-count="6"] .vl-bar,
   .vl-bar-chart[data-option-count="6"] .vl-bar-value {
-    width: 34px;
+    width: 38px;
   }
 
   .vl-pill-group {
