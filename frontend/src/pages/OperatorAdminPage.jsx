@@ -349,6 +349,7 @@ export function OperatorAdminPage() {
                   <p>
                     {poll.creatorName || "Ohne Namen"} · {poll.creatorEmail}
                   </p>
+                  {poll.creatorIp && <p>IP: {poll.creatorIp}</p>}
                   <p>
                     Erstellt:{" "}
                     {dateTimeFormat.format(new Date(poll.createdAt))}
@@ -356,15 +357,15 @@ export function OperatorAdminPage() {
                       ` · Endet: ${dateTimeFormat.format(
                         new Date(poll.expiresAt)
                       )}`}
-                    {poll.creatorIp && ` · IP: ${poll.creatorIp}`}
                   </p>
                   <p className="vl-admin-poll-meta">
-                    Status: <strong>{poll.status}</strong> · Teilnehmer:{" "}
-                    {poll.participantCount} · Optionen: {poll.optionCount} ·
-                    <span>Meldungen: {poll.reportCount}</span>
+                    Teilnehmer: {poll.participantCount} · Optionen:{" "}
+                    {poll.optionCount} ·{" "}
+                    <span className="vl-admin-report-meta">
+                      Meldungen: {poll.reportCount}
+                    </span>
                     {poll.reportCount > 0 && (
-                      <>
-                        {" "}
+                      <span className="vl-admin-report-meta">
                         <button
                           type="button"
                           onClick={() => setReportsDialogPoll(poll)}
@@ -372,8 +373,11 @@ export function OperatorAdminPage() {
                         >
                           Details
                         </button>
-                      </>
+                      </span>
                     )}
+                  </p>
+                  <p>
+                    Status: <strong>{poll.status}</strong>
                   </p>
                   {poll.blockedReason && (
                     <p style={{ color: "#991b1b" }}>

@@ -314,7 +314,7 @@ code {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
-  padding-right: 118px;
+  padding-right: 44px;
 }
 
 .vl-header-legal {
@@ -594,7 +594,7 @@ code {
 
 .vl-admin-row {
   display: grid;
-  grid-template-columns: minmax(520px, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   padding: 16px;
   border: 1px solid #ddd;
@@ -637,9 +637,15 @@ code {
 .vl-admin-poll-meta {
   display: flex;
   flex-wrap: wrap;
-  column-gap: 4px;
+  column-gap: 3px;
   row-gap: 2px;
   align-items: center;
+}
+
+.vl-admin-report-meta {
+  display: inline-flex;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .vl-inline-action {
@@ -667,6 +673,11 @@ code {
   color: #555;
   font-size: 0.92rem;
   line-height: 1.45;
+}
+
+.vl-report-form {
+  display: grid;
+  gap: 14px;
 }
 
 .vl-admin-toolbar {
@@ -886,7 +897,7 @@ code {
   }
 
   .vl-panel-header-row {
-    padding-right: 104px;
+    padding-right: 40px;
   }
 
   .vl-legal-dock {

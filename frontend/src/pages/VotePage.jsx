@@ -88,7 +88,6 @@ export function VotePage() {
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [hasJustVoted, setHasJustVoted] = useState(false);
-  const [isReportOpen, setIsReportOpen] = useState(false);
   const [reporterEmail, setReporterEmail] = useState("");
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
@@ -289,16 +288,81 @@ export function VotePage() {
             )}
             <div className="vl-header-legal">
               <LegalInfo
-                actions={[
-                  {
-                    label: "Melden",
-                    onClick: () => {
-                      setReportMessage("");
-                      setIsReportOpen(true);
-                    },
-                    title: "Umfrage melden",
+                reportPanel={{
+                  onOpen: () => {
+                    setReportMessage("");
                   },
-                ]}
+                  content: (
+                    <form onSubmit={handleReportSubmit}>
+                      {reportMessage ? (
+                        <p className="vl-text-success">{reportMessage}</p>
+                      ) : (
+                        <div className="vl-report-form">
+                          <label className="vl-label">
+                            Deine E-Mail
+                            <input
+                              type="email"
+                              value={reporterEmail}
+                              onChange={(event) =>
+                                setReporterEmail(event.target.value)
+                              }
+                              required
+                              className="vl-input"
+                            />
+                          </label>
+
+                          <label className="vl-label">
+                            Grund
+                            <select
+                              value={reportReason}
+                              onChange={(event) =>
+                                setReportReason(event.target.value)
+                              }
+                              required
+                              className="vl-input"
+                            >
+                              <option value="">Bitte auswählen</option>
+                              <option value="Rechtswidrige Inhalte">
+                                Rechtswidrige Inhalte
+                              </option>
+                              <option value="Hassrede oder Diskriminierung">
+                                Hassrede oder Diskriminierung
+                              </option>
+                              <option value="Belästigung oder Bedrohung">
+                                Belästigung oder Bedrohung
+                              </option>
+                              <option value="Spam oder Missbrauch">
+                                Spam oder Missbrauch
+                              </option>
+                              <option value="Sonstiger Verstoß">
+                                Sonstiger Verstoß
+                              </option>
+                            </select>
+                          </label>
+
+                          <label className="vl-label">
+                            Details
+                            <textarea
+                              value={reportDetails}
+                              onChange={(event) =>
+                                setReportDetails(event.target.value)
+                              }
+                              className="vl-input vl-textarea"
+                            />
+                          </label>
+
+                          <button
+                            type="submit"
+                            disabled={isReporting}
+                            className="vl-button"
+                          >
+                            {isReporting ? "Wird gemeldet..." : "Melden"}
+                          </button>
+                        </div>
+                      )}
+                    </form>
+                  ),
+                }}
               />
             </div>
           </div>
@@ -428,17 +492,15 @@ export function VotePage() {
               <div className="vl-state-message">
                 <h3>Diese Abstimmung ist beendet.</h3>
                 <p>
-                  Stimmen können nicht mehr abgegeben werden.
+                  Es können keine Stimmen mehr abgegeben werden.
                 </p>
               </div>
             ) : isParticipantLimitReached ? (
               <div className="vl-state-message">
-                <h3>
-                  Das Teilnehmerlimit ist erreicht.
-                </h3>
+                <h3>Teilnehmerlimit erreicht.</h3>
                 <p>
-                  Diese kostenlose Abstimmung nimmt keine weiteren Antworten
-                  entgegen.
+                  Die kostenlose Abstimmung ist auf {results.maxVoters}{" "}
+                  Teilnehmer begrenzt.
                 </p>
               </div>
             ) : (
@@ -518,107 +580,6 @@ export function VotePage() {
 
           </div>
         </section>
-      )}
-
-      {isReportOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="poll-report-title"
-          onClick={() => setIsReportOpen(false)}
-          className="vl-modal-backdrop"
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="vl-modal"
-          >
-            <div className="vl-modal-header">
-              <h2 id="poll-report-title">Umfrage melden</h2>
-            </div>
-
-            <form onSubmit={handleReportSubmit}>
-              <div className="vl-modal-body">
-                {reportMessage ? (
-                  <p className="vl-text-success">{reportMessage}</p>
-                ) : (
-                  <>
-                    <label className="vl-label">
-                      Deine E-Mail
-                      <input
-                        type="email"
-                        value={reporterEmail}
-                        onChange={(event) =>
-                          setReporterEmail(event.target.value)
-                        }
-                        required
-                        className="vl-input"
-                      />
-                    </label>
-
-                    <label className="vl-label">
-                      Grund
-                      <select
-                        value={reportReason}
-                        onChange={(event) =>
-                          setReportReason(event.target.value)
-                        }
-                        required
-                        className="vl-input"
-                      >
-                        <option value="">Bitte auswählen</option>
-                        <option value="Rechtswidrige Inhalte">
-                          Rechtswidrige Inhalte
-                        </option>
-                        <option value="Hassrede oder Diskriminierung">
-                          Hassrede oder Diskriminierung
-                        </option>
-                        <option value="Belästigung oder Bedrohung">
-                          Belästigung oder Bedrohung
-                        </option>
-                        <option value="Spam oder Missbrauch">
-                          Spam oder Missbrauch
-                        </option>
-                        <option value="Sonstiger Verstoß">
-                          Sonstiger Verstoß
-                        </option>
-                      </select>
-                    </label>
-
-                    <label className="vl-label">
-                      Details
-                      <textarea
-                        value={reportDetails}
-                        onChange={(event) =>
-                          setReportDetails(event.target.value)
-                        }
-                        className="vl-input vl-textarea"
-                      />
-                    </label>
-                  </>
-                )}
-              </div>
-
-              <div className="vl-modal-footer">
-                <button
-                  type="button"
-                  onClick={() => setIsReportOpen(false)}
-                  className="vl-button vl-button-secondary vl-modal-action-spaced"
-                >
-                  Schließen
-                </button>
-                {!reportMessage && (
-                  <button
-                    type="submit"
-                    disabled={isReporting}
-                    className="vl-button"
-                  >
-                    {isReporting ? "Wird gemeldet..." : "Melden"}
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </div>
       )}
     </main>
   );

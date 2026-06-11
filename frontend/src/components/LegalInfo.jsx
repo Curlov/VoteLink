@@ -12,16 +12,27 @@ const legalInfo = {
   retentionDays: import.meta.env.VITE_LEGAL_RETENTION_DAYS || "14",
 };
 
-function LegalModal({ activeTab, onTabChange, onClose }) {
+function LegalModal({ activeTab, onTabChange, onClose, reportPanel }) {
   const type = activeTab;
   const isPrivacy = type === "privacy";
   const isTerms = type === "terms";
-  const title = isPrivacy ? "Datenschutz" : isTerms ? "AGB" : "Impressum";
+  const isReport = type === "report";
+  const title = isPrivacy
+    ? "Datenschutz"
+    : isTerms
+      ? "AGB"
+      : isReport
+        ? "Umfrage melden"
+        : "Impressum";
   const tabs = [
     { id: "privacy", label: "Datenschutz" },
     { id: "imprint", label: "Impressum" },
     { id: "terms", label: "AGB" },
   ];
+
+  if (reportPanel) {
+    tabs.push({ id: "report", label: "Melden" });
+  }
 
   return (
     <div
@@ -39,7 +50,13 @@ function LegalModal({ activeTab, onTabChange, onClose }) {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => onTabChange(tab.id)}
+                onClick={() => {
+                  if (tab.id === "report") {
+                    reportPanel?.onOpen?.();
+                  }
+
+                  onTabChange(tab.id);
+                }}
                 className={`vl-button ${
                   activeTab === tab.id ? "" : "vl-button-secondary"
                 }`}
@@ -51,7 +68,9 @@ function LegalModal({ activeTab, onTabChange, onClose }) {
         </div>
 
         <div className="vl-modal-body">
-          {isPrivacy ? (
+          {isReport ? (
+            reportPanel.content
+          ) : isPrivacy ? (
             <>
               <p>
                 Verantwortlich für diese Anwendung:{" "}
@@ -156,25 +175,13 @@ function LegalModal({ activeTab, onTabChange, onClose }) {
   );
 }
 
-export function LegalInfo({ actions = [] }) {
+export function LegalInfo({ reportPanel = null }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("privacy");
 
   return (
     <>
       <div className="vl-legal-dock" aria-label="Rechtliche Informationen">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            onClick={action.onClick}
-            className="vl-header-action-button"
-            aria-label={action.ariaLabel || action.label}
-            title={action.title || action.label}
-          >
-            {action.label}
-          </button>
-        ))}
         <button
           type="button"
           onClick={() => {
@@ -194,6 +201,7 @@ export function LegalInfo({ actions = [] }) {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onClose={() => setIsModalOpen(false)}
+          reportPanel={reportPanel}
         />
       )}
     </>
