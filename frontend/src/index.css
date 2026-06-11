@@ -1085,10 +1085,10 @@ code {
   }
 
   .vl-admin-row-actions-primary .vl-button-link {
+    grid-column: 1 / -1;
     width: 100%;
   }
 
-  .vl-admin-row-actions-primary .vl-admin-action-button:nth-child(3),
   .vl-admin-row-actions-danger .vl-admin-action-button:only-child {
     grid-column: 1 / -1;
   }
