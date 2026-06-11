@@ -111,6 +111,7 @@ test(
 
       let adminPoll = await closePollAdminByToken(adminToken);
       assert.ok(adminPoll.expiresAt);
+      assert.equal(adminPoll.status, "expired");
 
       voteResult = await createVote({
         publicId,
@@ -122,6 +123,7 @@ test(
 
       adminPoll = await extendPollAdminByToken(adminToken, 1);
       assert.ok(new Date(adminPoll.expiresAt) > new Date());
+      assert.equal(adminPoll.status, "active");
 
       voteResult = await createVote({
         publicId,

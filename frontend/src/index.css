@@ -1043,20 +1043,83 @@ code {
 
   .vl-admin-row {
     grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .vl-panel-wide {
+    width: calc(100vw - 12px);
+  }
+
+  .vl-panel-wide .vl-panel-header,
+  .vl-panel-wide .vl-panel-body {
+    padding-inline: 12px;
+  }
+
+  .vl-admin-list {
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .vl-admin-row > div:first-child {
+    min-width: 0;
+  }
+
+  .vl-admin-row strong,
+  .vl-admin-row p {
+    overflow-wrap: anywhere;
   }
 
   .vl-admin-row-actions {
+    width: 100%;
     justify-items: start;
   }
 
   .vl-admin-row-actions-primary,
   .vl-admin-row-actions-danger {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
     justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .vl-admin-row-actions-primary .vl-button-link {
+    width: 100%;
+  }
+
+  .vl-admin-row-actions-primary .vl-admin-action-button:nth-child(3),
+  .vl-admin-row-actions-danger .vl-admin-action-button:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .vl-admin-action-button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 10px;
   }
 
   .vl-admin-toolbar {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .vl-admin-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    gap: 6px;
+  }
+
+  .vl-admin-tabs .vl-button {
+    min-width: 0;
+    padding-inline: 8px;
+    font-size: 0.8rem;
+  }
+
+  .vl-admin-toolbar > .vl-button {
+    width: 100%;
   }
 }
 

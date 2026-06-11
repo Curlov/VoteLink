@@ -2,6 +2,20 @@ import { pool } from "../db/pool.js";
 import { FREE_POLL_VOTER_LIMIT } from "../utils/pollLimits.js";
 import { hashToken, hashVoterToken } from "../utils/voterToken.js";
 
+export async function expireActivePolls(db = pool) {
+  const result = await db.query(
+    `
+    UPDATE polls
+    SET status = 'expired'
+    WHERE status = 'active'
+      AND expires_at IS NOT NULL
+      AND expires_at <= CURRENT_TIMESTAMP
+    `
+  );
+
+  return result.rowCount;
+}
+
 export async function createPoll({
   publicId,
   adminToken,
@@ -116,6 +130,8 @@ export async function createPoll({
 }
 
 export async function getPollByPublicId(publicId) {
+  await expireActivePolls();
+
   const pollResult = await pool.query(
     `
     SELECT 
@@ -132,7 +148,7 @@ export async function getPollByPublicId(publicId) {
       expires_at
     FROM polls
     WHERE public_id = $1
-      AND status = 'active'
+      AND status IN ('active', 'expired')
     `,
     [publicId]
   );
@@ -256,21 +272,32 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
       };
     }
 
+    if (poll.expires_at && new Date(poll.expires_at) <= new Date()) {
+      if (poll.status === "active") {
+        await client.query(
+          `
+          UPDATE polls
+          SET status = 'expired'
+          WHERE id = $1
+          `,
+          [poll.id]
+        );
+      }
+
+      await client.query("COMMIT");
+      return {
+        success: false,
+        status: 403,
+        error: "Diese Abstimmung ist bereits abgelaufen.",
+      };
+    }
+
     if (poll.status !== "active") {
       await client.query("ROLLBACK");
       return {
         success: false,
         status: 403,
         error: "Diese Abstimmung ist nicht aktiv.",
-      };
-    }
-
-    if (poll.expires_at && new Date(poll.expires_at) <= new Date()) {
-      await client.query("ROLLBACK");
-      return {
-        success: false,
-        status: 403,
-        error: "Diese Abstimmung ist bereits abgelaufen.",
       };
     }
 
@@ -481,6 +508,8 @@ async function buildPollResults(
 }
 
 export async function getPollResultsByPublicId(publicId) {
+  await expireActivePolls();
+
   const pollResult = await pool.query(
     `
     SELECT
@@ -495,7 +524,7 @@ export async function getPollResultsByPublicId(publicId) {
       expires_at
     FROM polls
     WHERE public_id = $1
-      AND status = 'active'
+      AND status IN ('active', 'expired')
     `,
     [publicId]
   );
@@ -515,6 +544,8 @@ export async function getPollAdminByToken(adminToken) {
   if (!adminTokenHash) {
     return null;
   }
+
+  await expireActivePolls();
 
   const pollResult = await pool.query(
     `
@@ -602,7 +633,8 @@ export async function closePollAdminByToken(adminToken) {
   const updateResult = await pool.query(
     `
     UPDATE polls
-    SET expires_at = CURRENT_TIMESTAMP
+    SET expires_at = CURRENT_TIMESTAMP,
+        status = 'expired'
     WHERE admin_token = $1
     RETURNING id
     `,
@@ -627,8 +659,9 @@ export async function extendPollAdminByToken(adminToken, durationDays) {
     `
     UPDATE polls
     SET expires_at =
-      GREATEST(COALESCE(expires_at, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
-      + ($2::int * interval '1 day')
+          GREATEST(COALESCE(expires_at, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
+          + ($2::int * interval '1 day'),
+        status = CASE WHEN status = 'expired' THEN 'active' ELSE status END
     WHERE admin_token = $1
     RETURNING id
     `,
@@ -715,7 +748,7 @@ export async function activatePollByToken(activationToken) {
 
     const pollResult = await client.query(
       `
-      SELECT public_id, title, status
+      SELECT public_id, title, status, expires_at
       FROM polls
       WHERE activation_token = $1
       FOR UPDATE
@@ -727,6 +760,19 @@ export async function activatePollByToken(activationToken) {
 
     if (!poll || !["pending", "active"].includes(poll.status)) {
       await client.query("ROLLBACK");
+      return null;
+    }
+
+    if (poll.expires_at && new Date(poll.expires_at) <= new Date()) {
+      await client.query(
+        `
+        UPDATE polls
+        SET status = 'expired'
+        WHERE activation_token = $1
+        `,
+        [activationTokenHash]
+      );
+      await client.query("COMMIT");
       return null;
     }
 
@@ -841,6 +887,8 @@ export async function createPollReport({
 }
 
 export async function listOperatorPolls() {
+  await expireActivePolls();
+
   const result = await pool.query(
     `
     SELECT
@@ -850,7 +898,7 @@ export async function listOperatorPolls() {
       p.description,
       p.creator_name,
       p.creator_email,
-      p.creator_ip::text AS creator_ip,
+      host(p.creator_ip) AS creator_ip,
       p.creator_ip_expires_at,
       p.status,
       p.created_at,
@@ -871,7 +919,7 @@ export async function listOperatorPolls() {
               prd.reporter_email,
               prd.reason,
               prd.details,
-              prd.reporter_ip::text AS reporter_ip,
+              host(prd.reporter_ip) AS reporter_ip,
               prd.created_at
             FROM poll_reports prd
             WHERE prd.poll_id = p.id

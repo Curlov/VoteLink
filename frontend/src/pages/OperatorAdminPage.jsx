@@ -220,7 +220,7 @@ export function OperatorAdminPage() {
     <main>
       <section className="vl-panel vl-panel-wide">
         <div className="vl-panel-header">
-          <h2>Betreiber-Admin</h2>
+          <h2>Admin Launch</h2>
         </div>
 
         <div className="vl-panel-body">
