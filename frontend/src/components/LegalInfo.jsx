@@ -156,20 +156,32 @@ function LegalModal({ activeTab, onTabChange, onClose }) {
   );
 }
 
-export function LegalInfo() {
+export function LegalInfo({ actions = [] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("privacy");
 
   return (
     <>
       <div className="vl-legal-dock" aria-label="Rechtliche Informationen">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            onClick={action.onClick}
+            className="vl-header-action-button"
+            aria-label={action.ariaLabel || action.label}
+            title={action.title || action.label}
+          >
+            {action.label}
+          </button>
+        ))}
         <button
           type="button"
           onClick={() => {
             setActiveTab("privacy");
             setIsModalOpen(true);
           }}
-          className="vl-info-circle"
+          className="vl-header-action-button"
           aria-label="Rechtliche Informationen anzeigen"
           title="Rechtliche Informationen"
         >

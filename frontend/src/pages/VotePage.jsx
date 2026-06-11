@@ -9,7 +9,7 @@ import {
 } from "../api/pollsApi";
 import { LegalInfo } from "../components/LegalInfo";
 
-const COMPACT_RESULT_OPTION_THRESHOLD = 10;
+const COMPACT_RESULT_OPTION_THRESHOLD = 6;
 
 function createFallbackToken() {
   const bytes = new Uint8Array(24);
@@ -289,7 +289,18 @@ export function VotePage() {
               </p>
             )}
             <div className="vl-header-legal">
-              <LegalInfo />
+              <LegalInfo
+                actions={[
+                  {
+                    label: "Melden",
+                    onClick: () => {
+                      setReportMessage("");
+                      setIsReportOpen(true);
+                    },
+                    title: "Umfrage melden",
+                  },
+                ]}
+              />
             </div>
           </div>
 
@@ -329,6 +340,7 @@ export function VotePage() {
               <div className="vl-bar-chart-scroll">
                 <div
                   className="vl-bar-chart"
+                  data-option-count={optionCount}
                   style={{
                     "--chart-gap": `${chartGap}px`,
                   }}
@@ -385,21 +397,6 @@ export function VotePage() {
                 </div>
               </div>
             )}
-
-            <div className="vl-report-row">
-              <button
-                type="button"
-                onClick={() => {
-                  setReportMessage("");
-                  setIsReportOpen(true);
-                }}
-                aria-label="Umfrage melden"
-                title="Umfrage melden"
-                className="vl-report-button"
-              >
-                Melden
-              </button>
-            </div>
           </div>
 
           <div className="vl-vote-panel">

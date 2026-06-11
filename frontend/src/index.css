@@ -434,7 +434,6 @@ code {
 
 .vl-bar-chart-scroll {
   display: flex;
-  justify-content: center;
   overflow-x: auto;
   margin-top: 24px;
   padding-bottom: 8px;
@@ -443,6 +442,7 @@ code {
 .vl-bar-chart {
   display: flex;
   align-items: flex-start;
+  margin-inline: auto;
   gap: var(--chart-gap);
   padding-inline: var(--chart-gap);
   background-image: linear-gradient(#333, #333);
@@ -495,29 +495,6 @@ code {
   color: #222;
   font-size: 0.95rem;
   text-align: center;
-}
-
-.vl-report-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-  margin-bottom: -22px;
-  margin-left: -20px;
-  text-align: left;
-}
-
-.vl-report-button {
-  min-width: 76px;
-  height: 24px;
-  border: 1px solid #ddd;
-  border-radius: 999px;
-  background: #f7f7f7;
-  color: #777;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 400;
-  line-height: 1;
 }
 
 .vl-vote-panel {
@@ -753,19 +730,25 @@ code {
   justify-content: flex-end;
 }
 
-.vl-info-circle {
-  width: 24px;
-  height: 24px;
-  border: 1px solid #333;
+.vl-header-action-button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #d6d6d6;
   border-radius: 999px;
-  background: #333;
-  color: #fff;
+  background: #fff;
+  color: #333;
   cursor: pointer;
   font: inherit;
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.vl-header-action-button:hover {
+  border-color: #bdbdbd;
+  background: #f9f9f9;
 }
 
 .vl-modal-backdrop {
@@ -914,23 +897,22 @@ code {
   }
 
   .vl-bar-chart-scroll {
-    justify-content: flex-start;
     margin-top: 18px;
   }
 
   .vl-bar-chart {
     --chart-height: 150px;
-    gap: min(var(--chart-gap), 14px);
-    padding-inline: min(var(--chart-gap), 12px);
+    gap: 8px;
+    padding-inline: 8px;
   }
 
   .vl-bar-column {
-    width: min(var(--option-width), 92px);
+    width: 52px;
   }
 
   .vl-bar,
   .vl-bar-value {
-    width: min(var(--bar-width), 42px);
+    width: 34px;
   }
 
   .vl-bar-value {
@@ -939,10 +921,80 @@ code {
   }
 
   .vl-bar-label {
-    width: min(var(--option-width), 92px);
+    width: 52px;
     min-height: 30px;
     font-size: 0.82rem;
     line-height: 1.2;
+  }
+
+  .vl-bar-chart[data-option-count="1"] {
+    gap: 18px;
+    padding-inline: 18px;
+  }
+
+  .vl-bar-chart[data-option-count="1"] .vl-bar-column,
+  .vl-bar-chart[data-option-count="1"] .vl-bar-label {
+    width: 128px;
+  }
+
+  .vl-bar-chart[data-option-count="1"] .vl-bar,
+  .vl-bar-chart[data-option-count="1"] .vl-bar-value {
+    width: 58px;
+  }
+
+  .vl-bar-chart[data-option-count="2"],
+  .vl-bar-chart[data-option-count="3"] {
+    gap: 18px;
+    padding-inline: 18px;
+  }
+
+  .vl-bar-chart[data-option-count="2"] .vl-bar-column,
+  .vl-bar-chart[data-option-count="2"] .vl-bar-label,
+  .vl-bar-chart[data-option-count="3"] .vl-bar-column,
+  .vl-bar-chart[data-option-count="3"] .vl-bar-label {
+    width: 82px;
+  }
+
+  .vl-bar-chart[data-option-count="2"] .vl-bar,
+  .vl-bar-chart[data-option-count="2"] .vl-bar-value,
+  .vl-bar-chart[data-option-count="3"] .vl-bar,
+  .vl-bar-chart[data-option-count="3"] .vl-bar-value {
+    width: 42px;
+  }
+
+  .vl-bar-chart[data-option-count="4"],
+  .vl-bar-chart[data-option-count="5"] {
+    gap: 7px;
+    padding-inline: 7px;
+  }
+
+  .vl-bar-chart[data-option-count="4"] .vl-bar-column,
+  .vl-bar-chart[data-option-count="4"] .vl-bar-label,
+  .vl-bar-chart[data-option-count="5"] .vl-bar-column,
+  .vl-bar-chart[data-option-count="5"] .vl-bar-label {
+    width: 58px;
+  }
+
+  .vl-bar-chart[data-option-count="4"] .vl-bar,
+  .vl-bar-chart[data-option-count="4"] .vl-bar-value,
+  .vl-bar-chart[data-option-count="5"] .vl-bar,
+  .vl-bar-chart[data-option-count="5"] .vl-bar-value {
+    width: 36px;
+  }
+
+  .vl-bar-chart[data-option-count="6"] {
+    gap: 5px;
+    padding-inline: 5px;
+  }
+
+  .vl-bar-chart[data-option-count="6"] .vl-bar-column,
+  .vl-bar-chart[data-option-count="6"] .vl-bar-label {
+    width: 46px;
+  }
+
+  .vl-bar-chart[data-option-count="6"] .vl-bar,
+  .vl-bar-chart[data-option-count="6"] .vl-bar-value {
+    width: 30px;
   }
 
   .vl-pill-group {
@@ -953,11 +1005,6 @@ code {
     min-width: 0;
     flex: 1 1 calc(50% - 8px);
     padding: 6px 10px;
-  }
-
-  .vl-report-row {
-    margin-bottom: -16px;
-    margin-left: -8px;
   }
 
   .vl-modal-backdrop {
@@ -997,8 +1044,8 @@ code {
 
   .vl-bar-chart {
     --chart-height: 170px;
-    gap: min(var(--chart-gap), 18px);
-    padding-inline: min(var(--chart-gap), 18px);
+    gap: min(var(--chart-gap), 16px);
+    padding-inline: min(var(--chart-gap), 14px);
   }
 
   .vl-bar-column {
