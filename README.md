@@ -151,6 +151,10 @@ die erlaubte Frontend-Origin eingeschränkt werden, z. B.
 gesetztes `CORS_ORIGIN` nicht. Ohne `CORS_ORIGIN` bleibt CORS nur für lokale
 Entwicklung offen.
 
+Für gehostete PostgreSQL-Datenbanken kann statt einzelner `DB_*`-Variablen auch
+eine `DATABASE_URL` gesetzt werden. Falls der Anbieter SSL verlangt, zusätzlich
+`DB_SSL=true` setzen.
+
 Das Frontend zeigt Impressum und Datenschutzhinweise als überlagernde Fenster
 an. Die Betreiberangaben werden über Frontend-Umgebungsvariablen gesetzt:
 
@@ -197,6 +201,14 @@ Das Frontend-Build-Ergebnis liegt in `frontend/dist` und kann statisch
 ausgeliefert werden. `VITE_API_BASE_URL` muss dabei auf die erreichbare
 Backend-API zeigen, z. B. `https://api.example.com/api` oder bei gleicher
 Domain `/api`.
+
+Wenn Frontend und Backend als getrennte Services deployed werden, muss beim
+Hoster das jeweilige Root-Verzeichnis gesetzt werden:
+
+- Frontend: `frontend`, Build Command `npm ci && npm run build`,
+  Publish Directory `dist`
+- Backend: `backend`, Build Command `npm ci && npm run migrate`,
+  Start Command `npm start`
 
 Aktuelle Free-Limits:
 

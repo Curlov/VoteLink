@@ -3,10 +3,29 @@ const API_BASE_URL = (
 ).replace(/\/$/, "");
 
 async function handleResponse(response) {
-  const result = await response.json();
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  const responseText = await response.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      "Die API hat keine JSON-Antwort geliefert. Bitte VITE_API_BASE_URL und die Backend-Route pruefen."
+    );
+  }
+
+  let result = null;
+
+  try {
+    result = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    throw new Error("Die API-Antwort konnte nicht gelesen werden.");
+  }
 
   if (!response.ok) {
-    throw new Error(result.error || "Es ist ein Fehler aufgetreten.");
+    throw new Error(result?.error || "Es ist ein Fehler aufgetreten.");
   }
 
   return result;
@@ -132,10 +151,7 @@ export async function deleteAdminPoll(adminToken) {
     method: "DELETE",
   });
 
-  if (!response.ok) {
-    const result = await response.json();
-    throw new Error(result.error || "Es ist ein Fehler aufgetreten.");
-  }
+  await handleResponse(response);
 
   return null;
 }
@@ -192,10 +208,7 @@ export async function removeIgnoredCreatorEmail(token, email) {
     }
   );
 
-  if (!response.ok) {
-    const result = await response.json();
-    throw new Error(result.error || "Es ist ein Fehler aufgetreten.");
-  }
+  await handleResponse(response);
 
   return null;
 }
@@ -208,10 +221,7 @@ export async function deleteOperatorPoll(token, publicId) {
     },
   });
 
-  if (!response.ok) {
-    const result = await response.json();
-    throw new Error(result.error || "Es ist ein Fehler aufgetreten.");
-  }
+  await handleResponse(response);
 
   return null;
 }
