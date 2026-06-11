@@ -16,7 +16,7 @@ async function handleResponse(response) {
     );
   }
 
-  let result = null;
+  let result;
 
   try {
     result = responseText ? JSON.parse(responseText) : null;

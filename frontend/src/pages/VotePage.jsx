@@ -335,7 +335,7 @@ export function VotePage() {
                 >
                   {results.options.map((option) => {
                     const barHeight =
-                      results.totalVotes === 0 ? 0 : option.percentage * 2.2;
+                      results.totalVotes === 0 ? 0 : option.percentage;
 
                     return (
                       <div
@@ -350,7 +350,7 @@ export function VotePage() {
                             className="vl-bar"
                             style={{
                               "--bar-width": `${barWidth}px`,
-                              "--bar-height": `${barHeight}px`,
+                              "--bar-height": `${barHeight}%`,
                               "--bar-radius":
                                 barHeight > 0 ? "12px 12px 0 0" : "0",
                             }}
