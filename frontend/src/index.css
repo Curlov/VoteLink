@@ -594,7 +594,7 @@ code {
 
 .vl-admin-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(520px, 1fr) auto;
   gap: 16px;
   padding: 16px;
   border: 1px solid #ddd;
@@ -617,16 +617,9 @@ code {
 
 .vl-admin-row-actions {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   justify-items: end;
   align-content: start;
-}
-
-.vl-admin-row-actions-line {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
 }
 
 .vl-admin-row-actions-primary,
@@ -638,7 +631,7 @@ code {
 }
 
 .vl-admin-action-button {
-  min-width: 128px;
+  min-width: 142px;
 }
 
 .vl-admin-poll-meta {
@@ -1046,8 +1039,7 @@ code {
   }
 
   .vl-admin-row-actions-primary,
-  .vl-admin-row-actions-danger,
-  .vl-admin-row-actions-line {
+  .vl-admin-row-actions-danger {
     justify-content: flex-start;
   }
 

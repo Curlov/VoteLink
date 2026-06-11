@@ -383,7 +383,7 @@ export function OperatorAdminPage() {
                 </div>
 
                 <div className="vl-admin-row-actions">
-                  <div className="vl-admin-row-actions-line">
+                  <div className="vl-admin-row-actions-primary">
                     <a
                       href={`/p/${poll.publicId}`}
                       target="_blank"
@@ -416,7 +416,7 @@ export function OperatorAdminPage() {
                     </button>
                   </div>
 
-                  <div className="vl-admin-row-actions-line">
+                  <div className="vl-admin-row-actions-danger">
                     <button
                       type="button"
                       className={getStatusButtonClass(
@@ -435,6 +435,9 @@ export function OperatorAdminPage() {
                     >
                       Löschen
                     </button>
+                  </div>
+
+                  <div className="vl-admin-row-actions-danger">
                     <button
                       type="button"
                       disabled={ignoredEmailSet.has(poll.creatorEmail)}
