@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { LegalInfo } from "../components/LegalInfo";
-import heroImage from "../assets/hero.png";
 
 const benefits = [
   "Abstimmung erstellen und Link teilen",
@@ -26,7 +25,7 @@ export function LandingPage() {
         </div>
 
         <img
-          src={heroImage}
+          src="/favicon.svg"
           alt=""
           aria-hidden="true"
           className="vl-landing-visual"

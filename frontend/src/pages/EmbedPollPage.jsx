@@ -77,6 +77,7 @@ export function EmbedPollPage() {
   const topOptions = getTopOptions(results.options);
   const voteLabel = results.allowMultipleVotes ? "Auswahlen" : "Stimmen";
   const pollUrl = `/p/${results.publicId}`;
+  const appHost = window.location.host || "votelink.de";
 
   return (
     <main className="vl-embed-page">
@@ -108,7 +109,7 @@ export function EmbedPollPage() {
               <div className="vl-embed-option-row">
                 <span>{option.text}</span>
                 <strong>
-                  {option.percentage}% · {option.voteCount}
+                  {option.voteCount} · {option.percentage}%
                 </strong>
               </div>
               <div className="vl-embed-progress-track">
@@ -125,7 +126,7 @@ export function EmbedPollPage() {
           <a className="vl-button vl-button-link" href={pollUrl} target="_blank" rel="noreferrer">
             Jetzt abstimmen
           </a>
-          <span>votelink.de</span>
+          <span>{appHost}</span>
         </div>
       </section>
     </main>

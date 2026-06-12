@@ -8,6 +8,11 @@ import {
   updateAdminPoll,
 } from "../api/pollsApi";
 import { LegalInfo } from "../components/LegalInfo";
+import {
+  copyTextToClipboard,
+  getAbsoluteAppUrl,
+  shareOrCopyUrl,
+} from "../utils/shareUtils";
 
 export function AdminPollPage() {
   const { adminToken } = useParams();
@@ -139,7 +144,7 @@ export function AdminPollPage() {
   async function handleCopyShareValue(value, shareItem, errorMessage) {
     try {
       setError("");
-      await navigator.clipboard.writeText(value);
+      await copyTextToClipboard(value);
       setCopiedShareItem(shareItem);
       if (copyResetTimeoutRef.current) {
         window.clearTimeout(copyResetTimeoutRef.current);
@@ -149,6 +154,29 @@ export function AdminPollPage() {
       }, 2000);
     } catch {
       setError(errorMessage);
+    }
+  }
+
+  async function handleSharePublicLink() {
+    try {
+      setError("");
+      const result = await shareOrCopyUrl({
+        title: poll.title,
+        text: poll.description || "Stimme bei dieser VoteLink-Abstimmung ab.",
+        url: getAbsoluteAppUrl(`/p/${poll.publicId}`),
+      });
+
+      if (result === "copied") {
+        setCopiedShareItem("public-share");
+        if (copyResetTimeoutRef.current) {
+          window.clearTimeout(copyResetTimeoutRef.current);
+        }
+        copyResetTimeoutRef.current = window.setTimeout(() => {
+          setCopiedShareItem("");
+        }, 2000);
+      }
+    } catch {
+      setError("Der Link konnte nicht geteilt oder kopiert werden.");
     }
   }
 
@@ -168,10 +196,9 @@ export function AdminPollPage() {
     );
   }
 
-  const appBaseUrl = window.location.origin;
-  const publicUrl = `${appBaseUrl}/p/${poll.publicId}`;
-  const adminUrl = `${appBaseUrl}/admin/${adminToken}`;
-  const embedUrl = `${appBaseUrl}/embed/${poll.publicId}`;
+  const publicUrl = getAbsoluteAppUrl(`/p/${poll.publicId}`);
+  const adminUrl = getAbsoluteAppUrl(`/admin/${adminToken}`);
+  const embedUrl = getAbsoluteAppUrl(`/embed/${poll.publicId}`);
   const embedCode = `<iframe
   src="${embedUrl}"
   width="100%"
@@ -196,6 +223,7 @@ export function AdminPollPage() {
     font: "inherit",
   };
   const isPublicLinkCopied = copiedShareItem === "public-link";
+  const isPublicShareCopied = copiedShareItem === "public-share";
   const isEmbedCodeCopied = copiedShareItem === "embed-code";
   const tabs = [
     { id: "results", label: "Ergebnisse" },
@@ -358,6 +386,15 @@ export function AdminPollPage() {
                     }`}
                   >
                     {isPublicLinkCopied ? "Kopiert" : "Link kopieren"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSharePublicLink}
+                    className={`vl-button vl-button-secondary vl-button-small ${
+                      isPublicShareCopied ? "vl-button-success" : ""
+                    }`}
+                  >
+                    {isPublicShareCopied ? "Kopiert" : "Teilen"}
                   </button>
                   <a
                     href={`/p/${poll.publicId}`}

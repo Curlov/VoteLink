@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPoll } from "../api/pollsApi";
 import { LegalInfo } from "../components/LegalInfo";
+import { copyTextToClipboard, getAbsoluteAppUrl } from "../utils/shareUtils";
 
 const FREE_POLL_OPTION_LIMIT = 6;
 
@@ -16,6 +17,7 @@ export function CreatePollPage() {
   const [hasAcceptedRules, setHasAcceptedRules] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [copiedLinkItem, setCopiedLinkItem] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   function handleOptionChange(index, value) {
@@ -45,6 +47,7 @@ export function CreatePollPage() {
 
     setError("");
     setResult(null);
+    setCopiedLinkItem("");
     setIsLoading(true);
 
     try {
@@ -65,6 +68,19 @@ export function CreatePollPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleCopyResultLink(value, item) {
+    try {
+      setError("");
+      await copyTextToClipboard(value);
+      setCopiedLinkItem(item);
+      window.setTimeout(() => {
+        setCopiedLinkItem("");
+      }, 2000);
+    } catch {
+      setError("Der Link konnte nicht kopiert werden.");
     }
   }
 
@@ -125,9 +141,27 @@ export function CreatePollPage() {
                   <p className="vl-text-subtle vl-link-label">
                     Lokaler Aktivierungslink
                   </p>
-                  <a href={result.links.activationUrl}>
-                    {`${window.location.origin}${result.links.activationUrl}`}
-                  </a>
+                  <div className="vl-link-action-row">
+                    <a href={result.links.activationUrl}>
+                      {getAbsoluteAppUrl(result.links.activationUrl)}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopyResultLink(
+                          getAbsoluteAppUrl(result.links.activationUrl),
+                          "activation"
+                        )
+                      }
+                      className={`vl-button vl-button-secondary vl-button-small ${
+                        copiedLinkItem === "activation"
+                          ? "vl-button-success"
+                          : ""
+                      }`}
+                    >
+                      {copiedLinkItem === "activation" ? "Kopiert" : "Kopieren"}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -139,9 +173,25 @@ export function CreatePollPage() {
                   <p className="vl-text-subtle vl-link-help">
                     Diesen Link kannst du an Teilnehmer weitergeben.
                   </p>
-                  <a href={result.links.publicUrl}>
-                    {`${window.location.origin}${result.links.publicUrl}`}
-                  </a>
+                  <div className="vl-link-action-row">
+                    <a href={result.links.publicUrl}>
+                      {getAbsoluteAppUrl(result.links.publicUrl)}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopyResultLink(
+                          getAbsoluteAppUrl(result.links.publicUrl),
+                          "public"
+                        )
+                      }
+                      className={`vl-button vl-button-secondary vl-button-small ${
+                        copiedLinkItem === "public" ? "vl-button-success" : ""
+                      }`}
+                    >
+                      {copiedLinkItem === "public" ? "Kopiert" : "Kopieren"}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -154,9 +204,25 @@ export function CreatePollPage() {
                     Nicht weitergeben. Mit diesem Link kann die Abstimmung
                     verwaltet oder gelöscht werden.
                   </p>
-                  <a href={result.links.adminUrl}>
-                    {`${window.location.origin}${result.links.adminUrl}`}
-                  </a>
+                  <div className="vl-link-action-row">
+                    <a href={result.links.adminUrl}>
+                      {getAbsoluteAppUrl(result.links.adminUrl)}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopyResultLink(
+                          getAbsoluteAppUrl(result.links.adminUrl),
+                          "admin"
+                        )
+                      }
+                      className={`vl-button vl-button-secondary vl-button-small ${
+                        copiedLinkItem === "admin" ? "vl-button-success" : ""
+                      }`}
+                    >
+                      {copiedLinkItem === "admin" ? "Kopiert" : "Kopieren"}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

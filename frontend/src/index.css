@@ -317,6 +317,22 @@ code {
   padding-right: 44px;
 }
 
+.vl-poll-header-row {
+  padding-right: 0;
+}
+
+.vl-panel-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.vl-panel-header-actions .vl-button-small,
+.vl-panel-header-actions .vl-header-action-button {
+  min-height: 28px;
+}
+
 .vl-header-legal {
   position: absolute;
   top: 12px;
@@ -382,6 +398,19 @@ code {
 .vl-link-help {
   margin-bottom: 4px;
   font-size: 0.9rem;
+}
+
+.vl-link-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vl-link-action-row a {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .vl-landing {
@@ -529,6 +558,7 @@ code {
   display: grid;
   gap: 12px;
   margin-top: 28px;
+  margin-bottom: 18px;
 }
 
 .vl-compact-result-row {
@@ -557,7 +587,7 @@ code {
   min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: 12px;
+  padding: 8px;
   box-sizing: border-box;
   background: #f6f6f6;
 }
@@ -566,8 +596,8 @@ code {
   box-sizing: border-box;
   width: min(100%, 520px);
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid #ddd;
   border-radius: 14px;
   background: #fff;
@@ -577,7 +607,7 @@ code {
 }
 
 .vl-embed-state {
-  min-height: 180px;
+  min-height: 150px;
   place-content: center;
   text-align: center;
 }
@@ -608,8 +638,9 @@ code {
 .vl-embed-title {
   margin: 4px 0 0;
   color: #222;
-  font-size: 1.25rem;
+  font-size: 1.18rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .vl-embed-status {
@@ -625,7 +656,7 @@ code {
 
 .vl-embed-description {
   color: #555;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   line-height: 1.45;
 }
 
@@ -645,7 +676,7 @@ code {
 
 .vl-embed-results {
   display: grid;
-  gap: 10px;
+  gap: 9px;
 }
 
 .vl-embed-option-row {
@@ -696,6 +727,7 @@ code {
   color: #777;
   font-size: 0.82rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .vl-bar-chart-scroll {
@@ -1247,6 +1279,10 @@ code {
 
   .vl-panel-header-row {
     padding-right: 40px;
+  }
+
+  .vl-poll-header-row {
+    padding-right: 0;
   }
 
   .vl-legal-dock {

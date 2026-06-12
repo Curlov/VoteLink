@@ -8,8 +8,9 @@ import {
   getPollResults,
 } from "../api/pollsApi";
 import { LegalInfo } from "../components/LegalInfo";
+import { getAbsoluteAppUrl, shareOrCopyUrl } from "../utils/shareUtils";
 
-const COMPACT_RESULT_OPTION_THRESHOLD = 6;
+const COMPACT_RESULT_OPTION_THRESHOLD = 0;
 
 function createFallbackToken() {
   const bytes = new Uint8Array(24);
@@ -232,16 +233,26 @@ export function VotePage() {
 
   async function handleCopyShareLink() {
     try {
-      const publicUrl = `${window.location.origin}/p/${publicId}`;
+      const publicUrl = getAbsoluteAppUrl(`/p/${publicId}`);
 
       setError("");
-      await navigator.clipboard.writeText(publicUrl);
-      setIsShareLinkCopied(true);
-      window.setTimeout(() => {
-        setIsShareLinkCopied(false);
-      }, 2000);
+      const result = await shareOrCopyUrl({
+        title: results?.title || poll?.title || "VoteLink-Abstimmung",
+        text:
+          results?.description ||
+          poll?.description ||
+          "Stimme bei dieser VoteLink-Abstimmung ab.",
+        url: publicUrl,
+      });
+
+      if (result === "copied") {
+        setIsShareLinkCopied(true);
+        window.setTimeout(() => {
+          setIsShareLinkCopied(false);
+        }, 2000);
+      }
     } catch {
-      setError("Der Link konnte nicht kopiert werden.");
+      setError("Der Link konnte nicht geteilt oder kopiert werden.");
     }
   }
 
@@ -286,17 +297,96 @@ export function VotePage() {
       {results && (
         <section className="vl-panel">
           <div className="vl-panel-header">
-            <div className="vl-panel-header-row">
+            <div className="vl-panel-header-row vl-poll-header-row">
               <h2 className="vl-panel-title">{results.title}</h2>
-              <button
-                type="button"
-                onClick={handleCopyShareLink}
-                className={`vl-button vl-button-secondary vl-button-small ${
-                  isShareLinkCopied ? "vl-button-success" : ""
-                }`}
-              >
-                {isShareLinkCopied ? "Kopiert" : "Teilen"}
-              </button>
+              <div className="vl-panel-header-actions">
+                <button
+                  type="button"
+                  onClick={handleCopyShareLink}
+                  className={`vl-button vl-button-secondary vl-button-small ${
+                    isShareLinkCopied ? "vl-button-success" : ""
+                  }`}
+                >
+                  {isShareLinkCopied ? "Kopiert" : "Teilen"}
+                </button>
+                <LegalInfo
+                  reportPanel={{
+                    onOpen: () => {
+                      setReportMessage("");
+                    },
+                    content: (
+                      <form onSubmit={handleReportSubmit}>
+                        {reportMessage ? (
+                          <p className="vl-text-success">{reportMessage}</p>
+                        ) : (
+                          <div className="vl-report-form">
+                            <label className="vl-label">
+                              Deine E-Mail
+                              <input
+                                type="email"
+                                value={reporterEmail}
+                                onChange={(event) =>
+                                  setReporterEmail(event.target.value)
+                                }
+                                required
+                                className="vl-input"
+                              />
+                            </label>
+
+                            <label className="vl-label">
+                              Grund
+                              <select
+                                value={reportReason}
+                                onChange={(event) =>
+                                  setReportReason(event.target.value)
+                                }
+                                required
+                                className="vl-input"
+                              >
+                                <option value="">Bitte auswählen</option>
+                                <option value="Rechtswidrige Inhalte">
+                                  Rechtswidrige Inhalte
+                                </option>
+                                <option value="Hassrede oder Diskriminierung">
+                                  Hassrede oder Diskriminierung
+                                </option>
+                                <option value="Belästigung oder Bedrohung">
+                                  Belästigung oder Bedrohung
+                                </option>
+                                <option value="Spam oder Missbrauch">
+                                  Spam oder Missbrauch
+                                </option>
+                                <option value="Sonstiger Verstoß">
+                                  Sonstiger Verstoß
+                                </option>
+                              </select>
+                            </label>
+
+                            <label className="vl-label">
+                              Details
+                              <textarea
+                                value={reportDetails}
+                                onChange={(event) =>
+                                  setReportDetails(event.target.value)
+                                }
+                                className="vl-input vl-textarea"
+                              />
+                            </label>
+
+                            <button
+                              type="submit"
+                              disabled={isReporting}
+                              className="vl-button"
+                            >
+                              {isReporting ? "Wird gemeldet..." : "Melden"}
+                            </button>
+                          </div>
+                        )}
+                      </form>
+                    ),
+                  }}
+                />
+              </div>
             </div>
 
             {results.description && (
@@ -311,85 +401,6 @@ export function VotePage() {
                 {!isExpired && `· noch ${remainingTime}`}
               </p>
             )}
-            <div className="vl-header-legal">
-              <LegalInfo
-                reportPanel={{
-                  onOpen: () => {
-                    setReportMessage("");
-                  },
-                  content: (
-                    <form onSubmit={handleReportSubmit}>
-                      {reportMessage ? (
-                        <p className="vl-text-success">{reportMessage}</p>
-                      ) : (
-                        <div className="vl-report-form">
-                          <label className="vl-label">
-                            Deine E-Mail
-                            <input
-                              type="email"
-                              value={reporterEmail}
-                              onChange={(event) =>
-                                setReporterEmail(event.target.value)
-                              }
-                              required
-                              className="vl-input"
-                            />
-                          </label>
-
-                          <label className="vl-label">
-                            Grund
-                            <select
-                              value={reportReason}
-                              onChange={(event) =>
-                                setReportReason(event.target.value)
-                              }
-                              required
-                              className="vl-input"
-                            >
-                              <option value="">Bitte auswählen</option>
-                              <option value="Rechtswidrige Inhalte">
-                                Rechtswidrige Inhalte
-                              </option>
-                              <option value="Hassrede oder Diskriminierung">
-                                Hassrede oder Diskriminierung
-                              </option>
-                              <option value="Belästigung oder Bedrohung">
-                                Belästigung oder Bedrohung
-                              </option>
-                              <option value="Spam oder Missbrauch">
-                                Spam oder Missbrauch
-                              </option>
-                              <option value="Sonstiger Verstoß">
-                                Sonstiger Verstoß
-                              </option>
-                            </select>
-                          </label>
-
-                          <label className="vl-label">
-                            Details
-                            <textarea
-                              value={reportDetails}
-                              onChange={(event) =>
-                                setReportDetails(event.target.value)
-                              }
-                              className="vl-input vl-textarea"
-                            />
-                          </label>
-
-                          <button
-                            type="submit"
-                            disabled={isReporting}
-                            className="vl-button"
-                          >
-                            {isReporting ? "Wird gemeldet..." : "Melden"}
-                          </button>
-                        </div>
-                      )}
-                    </form>
-                  ),
-                }}
-              />
-            </div>
           </div>
 
           <div className="vl-results-body">
