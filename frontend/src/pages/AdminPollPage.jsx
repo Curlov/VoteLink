@@ -191,7 +191,7 @@ export function AdminPollPage() {
   if (error && !poll) {
     return (
       <main>
-        <p style={{ color: "red" }}>Fehler: {error}</p>
+        <p className="vl-text-error">Fehler: {error}</p>
       </main>
     );
   }
@@ -341,7 +341,11 @@ export function AdminPollPage() {
             </p>
             <p>
               Status:{" "}
-              <strong style={{ color: isExpired ? "#991b1b" : "var(--primary-hover)" }}>
+              <strong
+                style={{
+                  color: isExpired ? "var(--warning-text)" : "var(--success-text)",
+                }}
+              >
                 {isExpired ? "Abgelaufen" : "Aktiv"}
               </strong>
             </p>
@@ -460,7 +464,7 @@ export function AdminPollPage() {
               </p>
             )}
             {error && (
-              <p style={{ color: "#991b1b", fontWeight: "700" }}>
+              <p style={{ color: "var(--danger-text)", fontWeight: "700" }}>
                 Fehler: {error}
               </p>
             )}
@@ -606,7 +610,7 @@ export function AdminPollPage() {
               gap: "12px",
             }}
           >
-            <h3 style={{ marginTop: 0, color: "#7f1d1d" }}>
+            <h3 style={{ marginTop: 0, color: "var(--danger-text)" }}>
               Abstimmung löschen
             </h3>
             <button
@@ -640,7 +644,7 @@ export function AdminPollPage() {
               <strong>Auswahlen: {poll.totalVotes}</strong>
             )}
             {poll.isParticipantLimitReached && (
-              <strong style={{ color: "#991b1b" }}>
+              <strong style={{ color: "var(--warning-text)" }}>
                 Teilnehmerlimit erreicht
               </strong>
             )}
@@ -649,6 +653,7 @@ export function AdminPollPage() {
           <div
             className="vl-compact-results"
             data-option-count={poll.options.length}
+            data-result-density={poll.options.length > 10 ? "dense" : "normal"}
           >
             {poll.options.map((option) => (
               <div key={option.id}>

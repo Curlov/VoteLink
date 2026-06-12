@@ -148,7 +148,11 @@ export function EmbedPollPage() {
           )}
         </div>
 
-        <div className="vl-embed-results">
+        <div
+          className="vl-embed-results"
+          data-option-count={topOptions.length}
+          data-result-density={topOptions.length > 10 ? "dense" : "normal"}
+        >
           {topOptions.map((option) => (
             <div
               key={option.id}

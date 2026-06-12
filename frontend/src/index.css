@@ -7,6 +7,18 @@
   --primary-hover: #6d28d9;
   --border: #e5e7eb;
   --soft: rgba(124, 58, 237, 0.12);
+  --warning: #d97706;
+  --warning-bg: #fff7ed;
+  --warning-border: #fed7aa;
+  --warning-text: #92400e;
+  --danger: #be123c;
+  --danger-bg: #fff1f2;
+  --danger-border: #fecdd3;
+  --danger-text: #9f1239;
+  --success: #059669;
+  --success-bg: #ecfdf5;
+  --success-border: #a7f3d0;
+  --success-text: #065f46;
   --text-h: var(--text);
   --code-bg: #f3f0ff;
   --accent: var(--primary);
@@ -144,8 +156,8 @@ code {
 }
 
 .vl-button-success {
-  border-color: var(--primary);
-  background: var(--primary);
+  border-color: var(--success);
+  background: var(--success);
   color: #fff;
 }
 
@@ -154,9 +166,15 @@ code {
 }
 
 .vl-button-danger {
-  border: 1px solid #f3c7c7;
-  background: #fff7f7;
-  color: #991b1b;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.vl-button-danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
 }
 
 .vl-button-link {
@@ -367,11 +385,11 @@ code {
 }
 
 .vl-text-success {
-  color: var(--primary-hover);
+  color: var(--success-text);
 }
 
 .vl-text-error {
-  color: #991b1b;
+  color: var(--danger-text);
 }
 
 .vl-text-center {
@@ -566,8 +584,8 @@ code {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  min-height: 34px;
-  padding: 6px 12px;
+  min-height: 32px;
+  padding: 5px 12px;
   border: 1px solid var(--border);
   border-radius: 11px;
   background: var(--card);
@@ -603,8 +621,57 @@ code {
   font-weight: 750;
 }
 
+.vl-compact-results[data-option-count="1"] .vl-result-option,
+.vl-embed-results[data-option-count="1"] .vl-result-option {
+  min-height: 46px;
+  padding-block: 10px;
+}
+
+.vl-compact-results[data-option-count="2"] .vl-result-option,
+.vl-embed-results[data-option-count="2"] .vl-result-option {
+  min-height: 42px;
+  padding-block: 9px;
+}
+
+.vl-compact-results[data-option-count="3"] .vl-result-option,
+.vl-embed-results[data-option-count="3"] .vl-result-option {
+  min-height: 38px;
+  padding-block: 8px;
+}
+
+.vl-compact-results[data-option-count="4"] .vl-result-option,
+.vl-embed-results[data-option-count="4"] .vl-result-option {
+  min-height: 35px;
+  padding-block: 6px;
+}
+
+.vl-compact-results[data-option-count="7"] .vl-result-option,
+.vl-compact-results[data-option-count="8"] .vl-result-option,
+.vl-compact-results[data-option-count="9"] .vl-result-option,
+.vl-compact-results[data-option-count="10"] .vl-result-option,
+.vl-embed-results[data-option-count="7"] .vl-result-option,
+.vl-embed-results[data-option-count="8"] .vl-result-option,
+.vl-embed-results[data-option-count="9"] .vl-result-option,
+.vl-embed-results[data-option-count="10"] .vl-result-option {
+  min-height: 30px;
+  padding-block: 4px;
+}
+
+.vl-compact-results[data-result-density="dense"] .vl-result-option,
+.vl-embed-results[data-result-density="dense"] .vl-result-option {
+  min-height: 28px;
+  padding-block: 3px;
+}
+
+.vl-compact-results[data-result-density="dense"],
+.vl-embed-results[data-result-density="dense"] {
+  gap: 7px;
+}
+
 .vl-compact-results[data-option-count="5"] .vl-result-option,
-.vl-compact-results[data-option-count="6"] .vl-result-option {
+.vl-compact-results[data-option-count="6"] .vl-result-option,
+.vl-embed-results[data-option-count="5"] .vl-result-option,
+.vl-embed-results[data-option-count="6"] .vl-result-option {
   min-height: 32px;
   padding-block: 5px;
 }
@@ -735,8 +802,6 @@ code {
 }
 
 .vl-embed-result-option {
-  min-height: 32px;
-  padding: 6px 10px;
   border-radius: 10px;
   font-size: 0.86rem;
 }

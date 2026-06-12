@@ -293,11 +293,11 @@ export function OperatorAdminPage() {
             </div>
           )}
 
-          {message && <p style={{ color: "#15803d" }}>{message}</p>}
-          {error && <p style={{ color: "#991b1b" }}>Fehler: {error}</p>}
+          {message && <p className="vl-text-success">{message}</p>}
+          {error && <p className="vl-text-error">Fehler: {error}</p>}
 
           {isAuthenticated && (
-            <p style={{ color: "#555" }}>
+            <p style={{ color: "var(--muted)" }}>
               {visibleItems.length === 0
                 ? isIgnoredView
                   ? "Keine E-Mail-Adressen in dieser Ansicht."
@@ -323,7 +323,7 @@ export function OperatorAdminPage() {
                         {dateTimeFormat.format(new Date(entry.createdAt))}
                       </p>
                       {entry.reason && (
-                        <p style={{ color: "#991b1b" }}>
+                        <p style={{ color: "var(--danger-text)" }}>
                           Grund: {entry.reason}
                         </p>
                       )}
@@ -380,7 +380,7 @@ export function OperatorAdminPage() {
                     Status: <strong>{poll.status}</strong>
                   </p>
                   {poll.blockedReason && (
-                    <p style={{ color: "#991b1b" }}>
+                    <p style={{ color: "var(--danger-text)" }}>
                       Grund: {poll.blockedReason}
                     </p>
                   )}
@@ -513,7 +513,7 @@ export function OperatorAdminPage() {
                 <p>
                   <strong>{blockDialogPoll.title}</strong>
                 </p>
-                <label style={{ color: "#333", fontWeight: "700" }}>
+                <label style={{ color: "var(--text)", fontWeight: "700" }}>
                   Grund
                   <textarea
                     value={blockReason}
@@ -623,7 +623,7 @@ export function OperatorAdminPage() {
                 <p>
                   Diese Adresse kann danach keine neuen Umfragen mehr erstellen.
                 </p>
-                <label style={{ color: "#333", fontWeight: "700" }}>
+                <label style={{ color: "var(--text)", fontWeight: "700" }}>
                   Grund
                   <textarea
                     value={ignoreReason}

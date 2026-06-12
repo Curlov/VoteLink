@@ -407,6 +407,9 @@ export function VotePage() {
             <div
               className="vl-compact-results"
               data-option-count={results.options.length}
+              data-result-density={
+                results.options.length > 10 ? "dense" : "normal"
+              }
             >
               {results.options.map((option) => (
                 <div

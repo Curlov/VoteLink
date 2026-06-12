@@ -85,7 +85,7 @@ export function buildPollCreatedEmail({
       "Hinweis: Die Abstimmung ist erst nach Aktivierung über den E-Mail-Link öffentlich erreichbar.",
     ].join("\n"),
     html: `
-      <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #222; line-height: 1.5;">
+      <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; line-height: 1.5;">
         <h1 style="font-size: 22px; margin: 0 0 12px;">Abstimmung aktivieren</h1>
         <p style="margin: 0 0 18px;">
           <strong>${safeTitle}</strong> wurde erstellt.${
@@ -95,28 +95,28 @@ export function buildPollCreatedEmail({
           }
         </p>
 
-        <div style="padding: 16px; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 14px; background: #f0fdf4;">
-          <p style="margin: 0 0 6px; font-weight: 700; color: #166534;">Aktivierung erforderlich</p>
-          <p style="margin: 0 0 10px; color: #166534;">Bitte bestätige deine E-Mail-Adresse, bevor die Abstimmung öffentlich erreichbar ist.</p>
-          <a href="${safeActivationUrl}" style="color: #166534; word-break: break-word;">${safeActivationUrl}</a>
+        <div style="padding: 16px; border: 1px solid #fed7aa; border-radius: 8px; margin-bottom: 14px; background: #fff7ed;">
+          <p style="margin: 0 0 6px; font-weight: 700; color: #92400e;">Aktivierung erforderlich</p>
+          <p style="margin: 0 0 10px; color: #92400e;">Bitte bestätige deine E-Mail-Adresse, bevor die Abstimmung öffentlich erreichbar ist.</p>
+          <a href="${safeActivationUrl}" style="color: #d97706; word-break: break-word;">${safeActivationUrl}</a>
         </div>
 
-        <div style="padding: 16px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 14px; background: #f7f7f7;">
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 14px; background: #ffffff;">
           <p style="margin: 0 0 6px; font-weight: 700;">Teilnehmer-Link</p>
-          <p style="margin: 0 0 10px; color: #555;">Nach der Aktivierung kannst du diesen Link an Teilnehmer weitergeben.</p>
-          <a href="${safePublicUrl}" style="color: #1d4ed8; word-break: break-word;">${safePublicUrl}</a>
+          <p style="margin: 0 0 10px; color: #6b7280;">Nach der Aktivierung kannst du diesen Link an Teilnehmer weitergeben.</p>
+          <a href="${safePublicUrl}" style="color: #7c3aed; word-break: break-word;">${safePublicUrl}</a>
         </div>
 
-        <div style="padding: 16px; border: 1px solid #f3c7c7; border-radius: 8px; background: #fff7f7; margin-bottom: 14px;">
-          <p style="margin: 0 0 6px; font-weight: 700; color: #7f1d1d;">Admin-Link</p>
-          <p style="margin: 0 0 10px; color: #7f1d1d;">Nur für dich. Nicht weitergeben.</p>
-          <a href="${safeAdminUrl}" style="color: #991b1b; word-break: break-word;">${safeAdminUrl}</a>
-          <p style="margin: 10px 0 0; color: #7f1d1d;">
+        <div style="padding: 16px; border: 1px solid #fecdd3; border-radius: 8px; background: #fff1f2; margin-bottom: 14px;">
+          <p style="margin: 0 0 6px; font-weight: 700; color: #9f1239;">Admin-Link</p>
+          <p style="margin: 0 0 10px; color: #9f1239;">Nur für dich. Nicht weitergeben.</p>
+          <a href="${safeAdminUrl}" style="color: #be123c; word-break: break-word;">${safeAdminUrl}</a>
+          <p style="margin: 10px 0 0; color: #9f1239;">
             Mit diesem Link kann die Abstimmung verwaltet, geschlossen oder dauerhaft gelöscht werden.
           </p>
         </div>
 
-        <p style="margin: 0; color: #555;">
+        <p style="margin: 0; color: #6b7280;">
           Die Abstimmung ist erst nach Aktivierung über den E-Mail-Link öffentlich erreichbar.
         </p>
       </div>
