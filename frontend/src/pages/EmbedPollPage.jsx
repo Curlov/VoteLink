@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getPollResults } from "../api/pollsApi";
 
 const DESCRIPTION_LIMIT = 140;
 const OPTION_LIMIT = 5;
+const EMBED_REFRESH_INTERVAL_MS = 10000;
 
 function getTruncatedDescription(description) {
   const trimmedDescription = String(description || "").trim();
@@ -29,27 +30,63 @@ function getTopOptions(options = []) {
 
 export function EmbedPollPage() {
   const { publicId } = useParams();
+  const pollStatusRef = useRef(null);
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadEmbedPoll() {
+    let isMounted = true;
+
+    async function loadEmbedPoll({ keepExistingResults = false } = {}) {
       try {
-        setError("");
-        setIsLoading(true);
+        if (!keepExistingResults) {
+          setIsLoading(true);
+        }
 
         const response = await getPollResults(publicId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        pollStatusRef.current = response.results.status;
         setResults(response.results);
+        setError("");
       } catch (err) {
-        setResults(null);
+        if (!isMounted) {
+          return;
+        }
+
         setError(err.message);
+        if (!keepExistingResults) {
+          setResults(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadEmbedPoll();
+
+    const intervalId = window.setInterval(() => {
+      if (
+        document.visibilityState !== "visible" ||
+        pollStatusRef.current === "expired"
+      ) {
+        return;
+      }
+
+      loadEmbedPoll({ keepExistingResults: true });
+    }, EMBED_REFRESH_INTERVAL_MS);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+      pollStatusRef.current = null;
+    };
   }, [publicId]);
 
   if (isLoading) {
@@ -65,9 +102,16 @@ export function EmbedPollPage() {
   if (error || !results) {
     return (
       <main className="vl-embed-page">
-        <section className="vl-embed-card vl-embed-state">
-          <strong>Abstimmung nicht verfügbar</strong>
-          <p>Diese Abstimmung kann nicht eingebettet angezeigt werden.</p>
+        <section className="vl-embed-card vl-embed-state vl-embed-placeholder">
+          <p className="vl-embed-kicker">VoteLink</p>
+          <strong>Abstimmung nicht mehr verfügbar</strong>
+          <p>
+            Erstelle deine eigene Online-Abstimmung und teile sie als Link oder
+            eingebettet auf deiner Website.
+          </p>
+          <a className="vl-button vl-button-link" href="/" target="_blank" rel="noreferrer">
+            Eigene Abstimmung erstellen
+          </a>
         </section>
       </main>
     );
@@ -78,6 +122,7 @@ export function EmbedPollPage() {
   const voteLabel = results.allowMultipleVotes ? "Auswahlen" : "Stimmen";
   const pollUrl = `/p/${results.publicId}`;
   const appHost = window.location.host || "votelink.de";
+  const isExpired = results.status === "expired";
 
   return (
     <main className="vl-embed-page">
@@ -88,9 +133,15 @@ export function EmbedPollPage() {
             <h1 className="vl-embed-title">{results.title}</h1>
           </div>
           <span className="vl-embed-status">
-            {results.status === "expired" ? "Beendet" : "Live"}
+            {isExpired ? "Beendet" : "Live"}
           </span>
         </div>
+
+        {isExpired && (
+          <p className="vl-embed-ended">
+            Diese Abstimmung ist beendet. Das Ergebnis bleibt hier sichtbar.
+          </p>
+        )}
 
         {description && (
           <p className="vl-embed-description">{description}</p>
@@ -123,9 +174,15 @@ export function EmbedPollPage() {
         </div>
 
         <div className="vl-embed-footer">
-          <a className="vl-button vl-button-link" href={pollUrl} target="_blank" rel="noreferrer">
-            Jetzt abstimmen
-          </a>
+          {isExpired ? (
+            <a className="vl-button vl-button-secondary vl-button-link" href="/" target="_blank" rel="noreferrer">
+              Eigene Abstimmung erstellen
+            </a>
+          ) : (
+            <a className="vl-button vl-button-link" href={pollUrl} target="_blank" rel="noreferrer">
+              Jetzt abstimmen
+            </a>
+          )}
           <span>{appHost}</span>
         </div>
       </section>
