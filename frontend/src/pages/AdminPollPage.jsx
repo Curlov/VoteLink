@@ -237,7 +237,7 @@ export function AdminPollPage() {
       <section
         style={{
           maxWidth: "820px",
-          margin: "32px auto",
+          margin: "var(--vl-page-top-space) auto",
           borderRadius: "24px",
           overflow: "hidden",
           border: "1px solid #ddd",
