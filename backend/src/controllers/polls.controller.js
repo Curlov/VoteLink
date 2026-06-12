@@ -225,6 +225,7 @@ export async function getPollController(req, res) {
         createdAt: poll.createdAt,
         expiresAt: poll.expiresAt,
         options: poll.options,
+        questions: poll.questions,
       },
     });
   } catch (error) {
@@ -507,7 +508,13 @@ export async function deleteOperatorPollController(req, res) {
 export async function voteController(req, res) {
   try {
     const { publicId } = req.params;
-    const { optionId, optionIds, voterName = "", voterToken } = req.body || {};
+    const {
+      answers,
+      optionId,
+      optionIds,
+      voterName = "",
+      voterToken,
+    } = req.body || {};
     const rateLimits = getRateLimits();
     const voteRateLimit = await consumeRateLimit({
       action: "vote_ip",
@@ -522,27 +529,11 @@ export async function voteController(req, res) {
       });
     }
 
-    const selectedOptionIds = Array.isArray(optionIds) ? optionIds : [optionId];
-    const cleanedOptionIds = [
-      ...new Set(
-        selectedOptionIds
-          .map((selectedOptionId) => Number(selectedOptionId))
-          .filter(
-            (selectedOptionId) =>
-              Number.isInteger(selectedOptionId) && selectedOptionId > 0
-          )
-      ),
-    ];
-
-    if (cleanedOptionIds.length === 0) {
-      return res.status(400).json({
-        error: "Es wurde keine gültige Option ausgewählt.",
-      });
-    }
-
     const result = await createVote({
       publicId,
-      optionIds: cleanedOptionIds,
+      answers,
+      optionId,
+      optionIds,
       voterName,
       voterToken,
     });

@@ -3,286 +3,192 @@ Du arbeitest an meinem Projekt VoteLink.
 Wichtig:
 
 * README kann veraltet sein.
-* Orientiere dich am tatsächlichen Code.
+* Orientiere dich am tatsaechlichen Code.
 * Bestehende Architektur beibehalten:
-
   * Backend: routes -> controllers -> models -> PostgreSQL
   * Frontend: pages -> api/pollsApi.js -> Backend
-* Bitte keine großen Architektur-Rewrites.
+* Bitte keine grossen Architektur-Rewrites.
 * Keine bestehenden Features entfernen.
 * Keine Secrets in Code oder Frontend schreiben.
 * Keine echten .env-Dateien anfassen.
 * Änderungen bitte in kleinen, nachvollziehbaren Schritten machen.
+* Bestehende API-Responses abwaertskompatibel erweitern, nicht abrupt brechen.
 * Nach jeder Phase bitte geänderte Dateien, Erklärung und Testschritte nennen.
 
-Ziel:
-VoteLink soll besser teilbar und einbettbar werden. Außerdem soll eine spätere Pro-Version vorbereitet werden, in der eine Umfrage mehrere Fragen enthalten kann.
+# Aktueller Stand
 
-Bitte arbeite in Phasen.
+## Produkt und Routing
 
-============================================================
-PHASE 1: Analyse und technischer Plan, noch keinen Code ändern
-==============================================================
+* `/` ist eine neue Landingpage.
+* `/create` ist die bisherige kostenlose Umfrage-Erstellung.
+* `/create/pro` ist ein Platzhalter fuer Pro-Umfragen.
+* Bestehende Public-Routen funktionieren weiter:
+  * `/p/:publicId`
+  * `/poll/:publicId`
+* Die Embed-Route existiert:
+  * `/embed/:publicId`
+* Admin-Routen und API-Routen sollen weiter unveraendert erreichbar bleiben.
 
-Lies zuerst die relevanten Dateien:
+## Frontend
 
-Backend:
+* `LandingPage.jsx` erklaert VoteLink kurz und fuehrt zu Free- oder Pro-Erstellung.
+* `ProCreatePage.jsx` zeigt vorerst nur, dass Pro-Umfragen demnaechst verfuegbar sind.
+* `CreatePollPage` bleibt der kostenlose Single-Question-Erstellungsflow.
+* Nach erfolgreichem Mailversand zeigt `CreatePollPage` Links nicht immer sofort an. Das passt zum spaeter geplanten E-Mail-Verifizierungsflow.
+* Bei fehlender Mailkonfiguration/lokalem Fallback koennen Links angezeigt werden.
+* `AdminPollPage` hat einen klaren Abschnitt "Teilen & Einbetten" mit:
+  * oeffentlichem Abstimmungslink
+  * Button "Link kopieren"
+  * Button/Link "Umfrage oeffnen"
+  * iframe-Embed-Code
+  * Button "Einbettungscode kopieren"
+  * Link zur Embed-Seite `/embed/:publicId`
+  * Copy-Feedback "Kopiert"
+* `AdminPollPage` zeigt den Admin-Link weiterhin an.
+* `EmbedPollPage` existiert und zeigt eine kompakte einbettbare Poll-/Ergebnisansicht.
+* `VotePage` hat einen kleinen "Teilen"-Button, der den aktuellen Poll-Link kopiert.
 
-* backend/src/app.js
-* backend/src/routes/polls.routes.js
-* backend/src/controllers/polls.controller.js
-* backend/src/models/poll.model.js
-* backend/src/services/mail.service.js
-* backend/src/utils/pollValidation.js
-* backend/src/db/migrations/*
+## Backend und Datenmodell
 
-Frontend:
+* `polls` ist weiterhin die Umfrage selbst.
+* `poll_options` gehoert historisch direkt zur Poll.
+* `poll_participations` bleibt pollweit.
+* `votes` speichert weiterhin Stimmen ueber `option_id`.
+* `poll_questions` wurde additiv eingefuehrt.
+* Bestehende Polls haben genau eine Default-Frage.
+* Neue Polls erzeugen ebenfalls eine Default-Frage.
+* `poll_options.question_id` ist gesetzt und `NOT NULL`.
+* Bestehende Single-Question-Polls funktionieren weiterhin.
+* Public-, Admin- und Results-Responses liefern zusaetzlich ein `questions`-Array.
+* Alte `options`-Felder bleiben fuer Kompatibilitaet erhalten.
+* Die Voting-API unterstuetzt weiterhin alte Payloads:
+  * `{ "optionId": 10, "voterName": "...", "voterToken": "..." }`
+  * `{ "optionIds": [10, 11], "voterName": "...", "voterToken": "..." }`
+* Die Voting-API unterstuetzt zusaetzlich die neue vorbereitete Multi-Frage-Payload:
+  * `{ "answers": [{ "questionId": 1, "optionIds": [10] }] }`
+* Intern werden alte Voting-Payloads in `answers` normalisiert.
+* `allowMultipleVotes` gilt bei der neuen Payload pro Frage.
+* Votes werden weiterhin als eine Zeile pro `option_id` gespeichert.
 
-* frontend/src/App.jsx
-* frontend/src/api/pollsApi.js
-* frontend/src/pages/CreatePollPage.jsx
-* frontend/src/pages/VotePage.jsx
-* frontend/src/pages/AdminPollPage.jsx
-* frontend/src/pages/OperatorAdminPage.jsx
-* frontend/src/components/LegalInfo.jsx
-* frontend/src/index.css
-* frontend/src/App.css
+## Serverseitige Meta-Tags
 
-Prüfe danach bitte:
+* VoteLink soll fuer Poll-Links serverseitig dynamische Meta-Tags liefern.
+* Ziel ist, dass Links wie `/poll/:publicId` oder die aktuell genutzte Poll-Route bereits vor dem React-Start passende Meta-Tags enthalten.
+* Das soll im Node/Express-Backend passieren, nicht nur clientseitig in React.
+* Caddy soll in Produktion auf den Express-Server reverse-proxyen, damit Express die HTML-Antworten erzeugen kann.
+* Bestehende SPA-Funktionalitaet darf dadurch nicht brechen.
 
-1. Wie öffentliche Polls aktuell geladen werden.
-2. Welche Daten die öffentliche Ergebnisansicht aktuell schon hat.
-3. Welche Ergebnisdaten für eine Mini-Balkenansicht fehlen.
-4. Wie ein Embed technisch am besten ergänzt werden kann.
-5. Wie OpenGraph/Messenger-Vorschauen bei der aktuellen React/Vite-SPA sinnvoll umgesetzt werden können.
-6. Welche Änderungen minimal nötig sind.
-7. Welche Änderungen NICHT jetzt umgesetzt werden sollten.
+# Wichtige technische Regeln
 
-Gib mir danach einen kurzen Plan mit:
+* Keine echte Pro-Abrechnung implementieren.
+* Keine Multi-Frage-UI bauen, bis explizit angefragt.
+* Keine bestehende Single-Question-Erstellung kaputt machen.
+* Keine alten API-Felder entfernen.
+* Keine Admin-, Activation- oder Mail-Tokens in Meta-Tags, Links oder Vorschauen leaken.
+* Inhalte aus der Datenbank muessen bei HTML-/Meta-Ausgabe escaped werden.
+* Bestehende Tests muessen gruen bleiben.
 
-* Phase 2: Embed/Mini-Ansicht
-* Phase 3: OpenGraph/Messenger-Vorschau
-* Phase 4: Vorbereitung Pro-Mehrfragen-Umfragen
-* Risiken
-* betroffene Dateien
+# Offene Punkte
 
-Ändere in Phase 1 noch keinen Code.
+## 1. Serverseitige Meta-Tags final pruefen und absichern
 
-============================================================
-PHASE 2: Embed/Mini-Ansicht mit kleinem Balkendiagramm
-======================================================
+Noch einmal konkret pruefen:
 
-Ziel:
-Eine öffentliche, einbettbare Mini-Version einer Poll soll entstehen.
-
-Neue Frontend-Route:
-
-* /embed/:publicId
-
-Neue Datei nach Bedarf:
-
-* frontend/src/pages/EmbedPollPage.jsx
-
-Anforderungen:
-
-* Die Embed-Seite soll Poll-Daten und Ergebnisse laden.
-* Sie soll kompakt sein und in einem iframe gut funktionieren.
-* Sie soll eine kleine Karte anzeigen:
-
-  * Poll-Titel
-  * optional kurze Beschreibung, wenn vorhanden und nicht zu lang
-  * Top-Optionen mit kleinen horizontalen Balken
-  * Prozentwert und Stimmenanzahl
-  * Teilnehmeranzahl, wenn vorhanden
-  * Button/Link „Jetzt abstimmen“
-  * dezentes VoteLink-Branding
-* Die Balken sollen mit HTML/CSS gebaut werden, nicht mit Canvas.
-* Keine interaktive Abstimmung im iframe in der ersten Version, außer es ist mit wenig Risiko möglich.
-* Erstmal reicht: Anzeigen + Button zur normalen Poll-Seite.
-* Die Karte muss responsive sein.
-* Sie soll auch in kleinen Breiten noch gut aussehen.
-* Blockierte, deaktivierte oder pending Polls dürfen nicht sinnvoll eingebettet werden.
-* Bei Fehlern eine ruhige Fehlermeldung anzeigen.
-
-Technische Hinweise:
-
-* API-Funktionen möglichst über frontend/src/api/pollsApi.js ergänzen oder wiederverwenden.
-* Wenn vorhandene getPoll/getPollResults reichen, diese wiederverwenden.
-* CSS möglichst in bestehende Struktur integrieren.
-* Kein neues großes Charting-Framework einbauen.
-* Kein Canvas für die Embed-Seite.
-* Keine Pro-Farben jetzt einbauen.
-* Free bleibt neutral im VoteLink-Design.
-
-Zusätzlich:
-
-* In der AdminPollPage soll der Ersteller einen Embed-Code kopieren können:
-
-<iframe
-  src="https://votelink.de/embed/PUBLIC_ID"
-  width="100%"
-  height="360"
-  style="border:0;border-radius:16px;"
-  loading="lazy"
-></iframe>
-
-Dabei soll die echte App-URL verwendet werden, falls sie im Frontend sinnvoll verfügbar ist. Sonst bitte robust relativ/konfigurierbar lösen.
-
-Akzeptanzkriterien:
-
-* /embed/:publicId lädt eine kompakte Ergebnis-/Poll-Karte.
-* Die Karte sieht in einem iframe sinnvoll aus.
-* AdminPollPage bietet einen kopierbaren Embed-Code.
-* Bestehende VotePage bleibt unverändert nutzbar.
-* npm run build im Frontend läuft.
-* Backend-Tests werden nicht beschädigt.
-
-============================================================
-PHASE 3: Messenger-/Link-Vorschau vorbereiten
-=============================================
+* Wie wird die React/Vite-SPA aktuell gebaut?
+* Wie wird sie aktuell ausgeliefert?
+* Liefert Express bereits `dist` aus?
+* Welche Rolle spielt Caddy in Produktion?
+* Welche konkrete Route ist fuer einzelne Polls kanonisch: `/p/:publicId`, `/poll/:publicId` oder beide?
+* Welche Poll-Daten stehen fuer Titel, Beschreibung, Optionen und Ablaufdatum zur Verfuegung?
 
 Ziel:
-Wenn ein Poll-Link geteilt wird, soll später nicht nur ein nackter Link erscheinen, sondern eine sinnvolle Vorschau.
 
-Wichtig:
-Die App ist eine React/Vite-SPA. Messenger und Crawler führen normalerweise kein React aus. Deshalb reichen clientseitige Meta-Tags nicht zuverlässig.
+* Express soll fuer Poll-SPA-Routen `index.html` laden.
+* Fuer Poll-Routen sollen vorher Poll-Daten aus der Datenbank geladen werden.
+* Platzhalter in `index.html` sollen durch dynamische Meta-Tags ersetzt werden.
+* Normale Assets wie JS, CSS und Bilder sollen weiterhin statisch ausgeliefert werden.
+* Fallbacks fuer fehlende, pending, blocked oder unvollstaendige Polls einbauen.
+* Caddy-Konfiguration dokumentieren: Produktion soll auf Express reverse-proxyen.
 
-Bitte prüfe und implementiere die kleinste robuste Lösung.
+Mindestens benoetigte Tags:
 
-Gewünschtes Zielbild:
+* `<title>`
+* `<meta name="description">`
+* `<meta property="og:title">`
+* `<meta property="og:description">`
+* `<meta property="og:type">`
+* `<meta property="og:url">`
+* optional `<meta property="og:image">`
+* `<meta name="twitter:card">`
+* `<meta name="twitter:title">`
+* `<meta name="twitter:description">`
 
-* Öffentliche Poll-Links sollen OpenGraph-Daten bekommen:
+## 2. Share-/Embed-UX weiter abrunden
 
-  * og:title
-  * og:description
-  * og:url
-  * og:image
-  * twitter:card
-  * twitter:title
-  * twitter:description
-  * twitter:image
+Aktueller Stand ist gut genug fuer den Adminbereich. Noch offen:
 
-Erste Version:
+* Optional Native Web Share API ergaenzen, wenn verfuegbar.
+* Clipboard-Fallback fuer unsichere Browser-Kontexte pruefen.
+* Optional Share-/Copy-Funktionen auch nach lokaler Fallback-Erstellung in `CreatePollPage` klarer darstellen.
+* Embed-Code final auf Produktionsdomain und Konfiguration pruefen.
+* Embed-Seite optisch und in kleinen iframe-Groessen weiter testen.
 
-* Noch kein dynamisches Canvas/PNG notwendig, wenn es zu viel Aufwand ist.
-* Ein statisches VoteLink-Preview-Bild ist für Phase 3 okay.
-* Wichtig ist, dass Titel und Beschreibung poll-spezifisch sein können.
-* Falls serverseitige HTML-Auslieferung für /p/:publicId im aktuellen Setup zu riskant ist, bitte nur einen sauberen technischen Vorschlag machen und noch nicht implementieren.
+## 3. E-Mail-Verifizierungsflow spaeter sauber fertigstellen
 
-Sicherheits-/Produktregeln:
+Noch nicht umgesetzt:
 
-* pending Polls dürfen keine echte Vorschau bekommen.
-* blocked/disabled Polls dürfen keine echte Vorschau bekommen.
-* active/expired Polls dürfen Titel und neutrale Beschreibung bekommen.
-* Keine Admin- oder Activation-Tokens in Meta-Tags.
-* Keine Ersteller-E-Mail in Meta-Tags.
-* Keine personenbezogenen Wählerinformationen in Meta-Tags.
+* Kein kompletter E-Mail-Verifizierungsflow.
+* Keine klare finale Produktentscheidung, wann Links direkt angezeigt werden und wann nur per Mail.
+* Aktivierungs-/Admin-Link-Flow final pruefen.
+* Sicherstellen, dass lokale Fallbacks und Produktion sauber getrennt bleiben.
 
-Spätere Zielroute für dynamisches Vorschaubild:
+## 4. Multi-Frage-Pro-Umfragen schrittweise weiter vorbereiten
 
-* GET /api/polls/:publicId/preview.png
+Bereits vorbereitet:
 
-Noch nicht zwingend in Phase 3 implementieren, aber bitte vorbereiten/planen:
+* `poll_questions`
+* `questions` in Responses
+* neue `answers`-Voting-Payload
+* Votes bleiben ueber `option_id`
 
-* Vorschaubild mit Titel
-* Top 3–5 Optionen
-* kleinen Balken
-* Prozentwerten
-* VoteLink-Branding
+Noch offen:
 
-Bitte begründe, ob dafür später besser Canvas/PNG, SVG oder eine andere Technik verwendet werden sollte.
+* Keine Multi-Frage-Erstellung im Frontend.
+* Keine Multi-Frage-Erstellung im Backend-CreatePoll-API.
+* Keine Admin-UI zum Bearbeiten mehrerer Fragen.
+* Keine Public-Vote-UI fuer mehrere Fragen.
+* Results-UI zeigt noch keine echte Multi-Frage-Ergebnisansicht.
+* Pro-/Free-Limits und Berechtigungen sind noch nicht implementiert.
 
-Akzeptanzkriterien für Phase 3:
+## 5. Tests und Qualitaet
 
-* Es gibt entweder eine funktionierende minimale OpenGraph-Lösung oder einen sehr konkreten, risikoarmen Implementierungsplan.
-* Bestehende SPA-Routen funktionieren weiter.
-* Kein großer Server-Side-Rendering-Umbau, wenn er nicht nötig ist.
+Beim naechsten groesseren Backend-Schritt ausfuehren:
 
-============================================================
-PHASE 4: Pro-Feature „mehrere Fragen pro Umfrage“ nur planen
-============================================================
+* Backend-Tests fuer Poll-API und Voting.
+* Migrationstests, wenn Schema geaendert wird.
+* Tests fuer alte und neue Voting-Payloads.
+* Tests fuer Results mit `questions`.
 
-Wichtig:
-Dieses Feature jetzt noch NICHT vollständig implementieren.
+Beim naechsten groesseren Frontend-Schritt ausfuehren:
 
-Ziel:
-Eine spätere Pro-Version soll Umfragen mit mehreren Fragen ermöglichen.
+* `npm run lint` im Frontend.
+* `npm run build` im Frontend.
+* Falls ein Dev-Server gebraucht wird: Seite lokal im Browser pruefen.
 
-Beispiel:
-Eine Umfrage könnte enthalten:
+# Zuletzt ausgefuehrte Checks
 
-* Frage 1: Welcher Termin passt?
-* Frage 2: Welche Uhrzeit passt?
-* Frage 3: Essen ja/nein?
-* Frage 4: Welche Option bevorzugst du?
+Beim letzten Frontend-Schritt liefen erfolgreich:
 
-Bitte analysiere, wie das aktuelle Datenmodell erweitert werden müsste.
+* `npm run lint` im Frontend.
+* `npm run build` im Frontend.
+* `git diff --check`.
 
-Aktueller Zustand:
+# Bekannte noch nicht committed Aenderungen
 
-* polls
-* poll_options
-* votes
-* poll_participations
+Der Arbeitsbaum kann noch uncommitted Aenderungen aus mehreren Phasen enthalten, unter anderem:
 
-Vermutlich nötige Zielstruktur:
+* Backend-Phase zu `poll_questions`, `questions`-Responses und `answers`-Voting-Payload.
+* Frontend-Landingpage und Pro-Platzhalter.
+* Share-/Copy-UX in `AdminPollPage`, `VotePage` und CSS.
 
-* polls
-* poll_questions
-* poll_options
-* poll_participations
-* votes
-
-Bitte prüfe:
-
-1. Wie man das Datenmodell ändern könnte, ohne bestehende Single-Question-Polls kaputt zu machen.
-2. Ob die aktuelle Poll technisch als Poll mit genau einer Frage migriert werden könnte.
-3. Wie API-Responses aussehen sollten.
-4. Wie CreatePollPage später mehrere Fragen erfassen könnte.
-5. Wie VotePage später mehrere Fragen anzeigen könnte.
-6. Wie Ergebnisse später gruppiert nach Frage angezeigt werden könnten.
-7. Welche Limits sinnvoll wären:
-
-   * Free: eine Frage
-   * Pro: mehrere Fragen
-8. Welche Migrationsstrategie am sichersten wäre.
-9. Welche Tests nötig wären.
-
-Wichtig:
-Bitte in Phase 4 nur einen technischen Migrations- und Produktplan erstellen.
-Noch keine Migration schreiben und keine bestehenden Tabellen umbauen, außer ich bestätige es ausdrücklich.
-
-============================================================
-PRIORITÄT
-=========
-
-Bitte setze die Priorität so:
-
-1. Phase 1: Analyse/Plan
-2. Phase 2: Embed/Mini-Balkendiagramm
-3. Phase 3: Messenger/OpenGraph-Vorschau
-4. Phase 4: Pro-Mehrfragen nur planen
-
-Wenn dir unterwegs auffällt, dass eine Phase riskanter ist als gedacht, bitte stoppen und erklären, statt großflächig umzubauen.
-
-============================================================
-AUSGABEFORMAT
-=============
-
-Nach Phase 1:
-
-* Kurze Analyse
-* Umsetzungsplan
-* Risiken
-* betroffene Dateien
-* Empfehlung, womit begonnen werden soll
-
-Nach Codeänderungen:
-
-* Geänderte Dateien
-* Was wurde geändert?
-* Wie teste ich es lokal?
-* Welche Randfälle wurden beachtet?
-* Welche Tests/Builds wurden ausgeführt?
-* Was ist noch offen?
-
+Vor neuen Aenderungen bitte `git status --short` pruefen und keine fremden/unrelated Aenderungen zuruecksetzen.

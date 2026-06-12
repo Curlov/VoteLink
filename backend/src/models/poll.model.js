@@ -16,6 +16,316 @@ export async function expireActivePolls(db = pool) {
   return result.rowCount;
 }
 
+function mapPollOption(option) {
+  return {
+    id: option.id,
+    text: option.option_text,
+    position: option.position,
+  };
+}
+
+async function getPollQuestionsByPollId(pollId) {
+  const result = await pool.query(
+    `
+    SELECT
+      pq.id AS question_id,
+      pq.question_text,
+      pq.question_type,
+      pq.allow_multiple_votes,
+      pq.position AS question_position,
+      po.id AS option_id,
+      po.option_text,
+      po.position AS option_position
+    FROM poll_questions pq
+    LEFT JOIN poll_options po
+      ON po.question_id = pq.id
+    WHERE pq.poll_id = $1
+    ORDER BY pq.position ASC, po.position ASC
+    `,
+    [pollId]
+  );
+
+  const questionsById = new Map();
+
+  for (const row of result.rows) {
+    if (!questionsById.has(row.question_id)) {
+      questionsById.set(row.question_id, {
+        id: row.question_id,
+        text: row.question_text,
+        questionType: row.question_type,
+        allowMultipleVotes: row.allow_multiple_votes,
+        position: row.question_position,
+        options: [],
+      });
+    }
+
+    if (row.option_id) {
+      questionsById.get(row.question_id).options.push({
+        id: row.option_id,
+        text: row.option_text,
+        position: row.option_position,
+      });
+    }
+  }
+
+  return [...questionsById.values()];
+}
+
+async function getPollResultQuestionsByPollId(pollId, optionsById) {
+  const questions = await getPollQuestionsByPollId(pollId);
+
+  return questions.map((question) => {
+    const options = question.options.map((option) => ({
+      ...optionsById.get(option.id),
+    }));
+    const totalVotes = options.reduce(
+      (sum, option) => sum + option.voteCount,
+      0
+    );
+
+    return {
+      ...question,
+      totalVotes,
+      options: options.map((option) => ({
+        ...option,
+        percentage:
+          totalVotes === 0
+            ? 0
+            : Math.round((option.voteCount / totalVotes) * 100),
+      })),
+    };
+  });
+}
+
+export function normalizeVotePayload({ answers, optionId, optionIds } = {}) {
+  if (answers !== undefined) {
+    if (!Array.isArray(answers) || answers.length === 0) {
+      return {
+        success: false,
+        status: 400,
+        error: "Bitte gib mindestens eine Antwort an.",
+      };
+    }
+
+    const questionIds = new Set();
+    const normalizedAnswers = [];
+
+    for (const answer of answers) {
+      const questionId = Number(answer?.questionId);
+
+      if (!Number.isInteger(questionId) || questionId <= 0) {
+        return {
+          success: false,
+          status: 400,
+          error: "Eine Antwort enthält keine gültige Frage.",
+        };
+      }
+
+      if (questionIds.has(questionId)) {
+        return {
+          success: false,
+          status: 400,
+          error: "Eine Frage wurde mehrfach beantwortet.",
+        };
+      }
+
+      if (!Array.isArray(answer?.optionIds) || answer.optionIds.length === 0) {
+        return {
+          success: false,
+          status: 400,
+          error: "Eine Antwort enthält keine gültige Option.",
+        };
+      }
+
+      const normalizedOptionIds = answer.optionIds
+        .map((selectedOptionId) => Number(selectedOptionId))
+        .filter(
+          (selectedOptionId) =>
+            Number.isInteger(selectedOptionId) && selectedOptionId > 0
+        );
+      const uniqueOptionIds = new Set(normalizedOptionIds);
+
+      if (
+        normalizedOptionIds.length !== answer.optionIds.length ||
+        normalizedOptionIds.length === 0
+      ) {
+        return {
+          success: false,
+          status: 400,
+          error: "Eine Antwort enthält keine gültige Option.",
+        };
+      }
+
+      if (uniqueOptionIds.size !== normalizedOptionIds.length) {
+        return {
+          success: false,
+          status: 400,
+          error: "Eine Antwort enthält eine Option mehrfach.",
+        };
+      }
+
+      questionIds.add(questionId);
+      normalizedAnswers.push({
+        questionId,
+        optionIds: normalizedOptionIds,
+        isLegacyPayload: false,
+      });
+    }
+
+    return {
+      success: true,
+      answers: normalizedAnswers,
+    };
+  }
+
+  const selectedOptionIds = Array.isArray(optionIds) ? optionIds : [optionId];
+  const normalizedOptionIds = [
+    ...new Set(
+      selectedOptionIds
+        .map((selectedOptionId) => Number(selectedOptionId))
+        .filter(
+          (selectedOptionId) =>
+            Number.isInteger(selectedOptionId) && selectedOptionId > 0
+        )
+    ),
+  ];
+
+  if (normalizedOptionIds.length === 0) {
+    return {
+      success: false,
+      status: 400,
+      error: "Es wurde keine gültige Option ausgewählt.",
+    };
+  }
+
+  return {
+    success: true,
+    answers: [
+      {
+        questionId: null,
+        optionIds: normalizedOptionIds,
+        isLegacyPayload: true,
+      },
+    ],
+  };
+}
+
+async function validateVoteAnswers(client, pollId, answers) {
+  const requestedQuestionIds = answers
+    .map((answer) => answer.questionId)
+    .filter((questionId) => questionId !== null);
+  const questionsResult = await client.query(
+    `
+    SELECT id, allow_multiple_votes
+    FROM poll_questions
+    WHERE poll_id = $1
+      AND (
+        cardinality($2::int[]) = 0
+        OR id = ANY($2::int[])
+      )
+    `,
+    [pollId, requestedQuestionIds]
+  );
+  const questionsById = new Map(
+    questionsResult.rows.map((question) => [
+      question.id,
+      {
+        id: question.id,
+        allowMultipleVotes: question.allow_multiple_votes,
+      },
+    ])
+  );
+
+  if (
+    requestedQuestionIds.length > 0 &&
+    questionsById.size !== requestedQuestionIds.length
+  ) {
+    return {
+      success: false,
+      status: 400,
+      error: "Eine Antwort gehört nicht zu dieser Abstimmung.",
+    };
+  }
+
+  const requestedOptionIds = answers.flatMap((answer) => answer.optionIds);
+  const optionResult = await client.query(
+    `
+    SELECT
+      po.id,
+      po.question_id,
+      po.position,
+      pq.allow_multiple_votes
+    FROM poll_options po
+    INNER JOIN poll_questions pq
+      ON pq.id = po.question_id
+    WHERE pq.poll_id = $1
+      AND po.id = ANY($2::int[])
+    ORDER BY pq.position ASC, po.position ASC
+    `,
+    [pollId, requestedOptionIds]
+  );
+  const optionsById = new Map(
+    optionResult.rows.map((option) => [option.id, option])
+  );
+
+  if (optionsById.size !== requestedOptionIds.length) {
+    return {
+      success: false,
+      status: 400,
+      error: "Die gewählte Option gehört nicht zu dieser Abstimmung.",
+    };
+  }
+
+  const validatedOptionIds = [];
+
+  for (const answer of answers) {
+    const answerOptions = answer.optionIds.map((currentOptionId) =>
+      optionsById.get(currentOptionId)
+    );
+    const optionQuestionIds = new Set(
+      answerOptions.map((option) => option.question_id)
+    );
+
+    if (answer.isLegacyPayload) {
+      if (optionQuestionIds.size !== 1) {
+        return {
+          success: false,
+          status: 400,
+          error: "Die alte Vote-Payload kann nur Optionen einer Frage enthalten.",
+        };
+      }
+
+      answer.questionId = answerOptions[0].question_id;
+    } else if (optionQuestionIds.size !== 1 || !optionQuestionIds.has(answer.questionId)) {
+      return {
+        success: false,
+        status: 400,
+        error: "Die gewählte Option gehört nicht zur angegebenen Frage.",
+      };
+    }
+
+    const question = questionsById.get(answer.questionId) || {
+      id: answer.questionId,
+      allowMultipleVotes: answerOptions[0].allow_multiple_votes,
+    };
+
+    if (!question.allowMultipleVotes && answer.optionIds.length > 1) {
+      return {
+        success: false,
+        status: 400,
+        error: "Für diese Frage darf nur eine Option gewählt werden.",
+      };
+    }
+
+    validatedOptionIds.push(...answer.optionIds);
+  }
+
+  return {
+    success: true,
+    optionIds: validatedOptionIds,
+  };
+}
+
 export async function createPoll({
   publicId,
   adminToken,
@@ -105,13 +415,29 @@ export async function createPoll({
       activation_token: activationToken,
     };
 
+    const questionResult = await client.query(
+      `
+      INSERT INTO poll_questions (
+        poll_id,
+        question_text,
+        question_type,
+        allow_multiple_votes,
+        position
+      )
+      VALUES ($1, $2, 'single_choice', $3, 0)
+      RETURNING id
+      `,
+      [poll.id, title, allowMultipleVotes]
+    );
+    const question = questionResult.rows[0];
+
     for (let i = 0; i < options.length; i++) {
       await client.query(
         `
-        INSERT INTO poll_options (poll_id, option_text, position)
-        VALUES ($1, $2, $3)
+        INSERT INTO poll_options (poll_id, question_id, option_text, position)
+        VALUES ($1, $2, $3, $4)
         `,
-        [poll.id, options[i], i]
+        [poll.id, question.id, options[i], i]
       );
     }
 
@@ -171,6 +497,8 @@ export async function getPollByPublicId(publicId) {
     `,
     [poll.id]
   );
+  const options = optionsResult.rows.map(mapPollOption);
+  const questions = await getPollQuestionsByPollId(poll.id);
 
   return {
     id: poll.id,
@@ -184,11 +512,8 @@ export async function getPollByPublicId(publicId) {
     allowMultipleVotes: poll.allow_multiple_votes,
     createdAt: poll.created_at,
     expiresAt: poll.expires_at,
-    options: optionsResult.rows.map((option) => ({
-      id: option.id,
-      text: option.option_text,
-      position: option.position,
-    })),
+    options,
+    questions,
   };
 }
 
@@ -231,9 +556,20 @@ export async function getParticipationByPublicId({ publicId, voterToken }) {
   };
 }
 
-export async function createVote({ publicId, optionIds, voterName, voterToken }) {
-  const client = await pool.connect();
+export async function createVote({
+  publicId,
+  optionId,
+  optionIds,
+  answers,
+  voterName,
+  voterToken,
+}) {
   const voterTokenHash = hashVoterToken(voterToken);
+  const normalizedVotePayload = normalizeVotePayload({
+    answers,
+    optionId,
+    optionIds,
+  });
 
   if (!voterTokenHash) {
     return {
@@ -242,6 +578,12 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
       error: "Teilnahme-Token fehlt oder ist ungültig.",
     };
   }
+
+  if (!normalizedVotePayload.success) {
+    return normalizedVotePayload;
+  }
+
+  const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
@@ -301,15 +643,6 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
       };
     }
 
-    if (!poll.allow_multiple_votes && optionIds.length > 1) {
-      await client.query("ROLLBACK");
-      return {
-        success: false,
-        status: 400,
-        error: "Für diese Abstimmung darf nur eine Option gewählt werden.",
-      };
-    }
-
     const existingParticipationResult = await client.query(
       `
       SELECT id
@@ -329,24 +662,15 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
       };
     }
 
-    const optionResult = await client.query(
-      `
-      SELECT id
-      FROM poll_options
-      WHERE poll_id = $1
-      AND id = ANY($2::int[])
-      ORDER BY position ASC
-      `,
-      [poll.id, optionIds]
+    const validatedAnswers = await validateVoteAnswers(
+      client,
+      poll.id,
+      normalizedVotePayload.answers
     );
 
-    if (optionResult.rows.length !== optionIds.length) {
+    if (!validatedAnswers.success) {
       await client.query("ROLLBACK");
-      return {
-        success: false,
-        status: 400,
-        error: "Die gewählte Option gehört nicht zu dieser Abstimmung.",
-      };
+      return validatedAnswers;
     }
 
     if (!poll.is_anonymous && (!voterName || voterName.trim().length < 2)) {
@@ -392,7 +716,7 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
 
     const votes = [];
 
-    for (const option of optionResult.rows) {
+    for (const currentOptionId of validatedAnswers.optionIds) {
       const voteResult = await client.query(
         `
         INSERT INTO votes (
@@ -406,7 +730,7 @@ export async function createVote({ publicId, optionIds, voterName, voterToken })
         `,
         [
           poll.id,
-          option.id,
+          currentOptionId,
           poll.is_anonymous ? null : voterName.trim(),
           voterTokenHash,
         ]
@@ -471,6 +795,19 @@ async function buildPollResults(
 
   const totalVotes = totalVotesResult.rows[0].total_votes;
   const totalVoters = totalVotesResult.rows[0].total_voters;
+  const options = resultsResult.rows.map((option) => ({
+    id: option.id,
+    text: option.option_text,
+    position: option.position,
+    voteCount: option.vote_count,
+    voterNames:
+      includeVoterNames && !poll.is_anonymous ? option.voter_names : [],
+    percentage:
+      totalVotes === 0
+        ? 0
+        : Math.round((option.vote_count / totalVotes) * 100),
+  }));
+  const optionsById = new Map(options.map((option) => [option.id, option]));
 
   const results = {
     publicId: poll.public_id,
@@ -486,18 +823,8 @@ async function buildPollResults(
     totalVoters,
     maxVoters: FREE_POLL_VOTER_LIMIT,
     isParticipantLimitReached: totalVoters >= FREE_POLL_VOTER_LIMIT,
-    options: resultsResult.rows.map((option) => ({
-      id: option.id,
-      text: option.option_text,
-      position: option.position,
-      voteCount: option.vote_count,
-      voterNames:
-        includeVoterNames && !poll.is_anonymous ? option.voter_names : [],
-      percentage:
-        totalVotes === 0
-          ? 0
-          : Math.round((option.vote_count / totalVotes) * 100),
-    })),
+    options,
+    questions: await getPollResultQuestionsByPollId(poll.id, optionsById),
   };
 
   if (includeCreatorEmail) {

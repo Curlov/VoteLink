@@ -26,8 +26,7 @@ export function AdminPollPage() {
   const [isExtending, setIsExtending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState("results");
-  const [isPublicLinkCopied, setIsPublicLinkCopied] = useState(false);
-  const [isEmbedCodeCopied, setIsEmbedCodeCopied] = useState(false);
+  const [copiedShareItem, setCopiedShareItem] = useState("");
 
   useEffect(() => {
     async function loadAdminPoll() {
@@ -137,35 +136,19 @@ export function AdminPollPage() {
     }
   }
 
-  async function handleCopyLink(url) {
+  async function handleCopyShareValue(value, shareItem, errorMessage) {
     try {
       setError("");
-      await navigator.clipboard.writeText(url);
-      setIsPublicLinkCopied(true);
+      await navigator.clipboard.writeText(value);
+      setCopiedShareItem(shareItem);
       if (copyResetTimeoutRef.current) {
         window.clearTimeout(copyResetTimeoutRef.current);
       }
       copyResetTimeoutRef.current = window.setTimeout(() => {
-        setIsPublicLinkCopied(false);
+        setCopiedShareItem("");
       }, 2000);
     } catch {
-      setError("Der Link konnte nicht kopiert werden.");
-    }
-  }
-
-  async function handleCopyEmbedCode(embedCode) {
-    try {
-      setError("");
-      await navigator.clipboard.writeText(embedCode);
-      setIsEmbedCodeCopied(true);
-      if (copyResetTimeoutRef.current) {
-        window.clearTimeout(copyResetTimeoutRef.current);
-      }
-      copyResetTimeoutRef.current = window.setTimeout(() => {
-        setIsEmbedCodeCopied(false);
-      }, 2000);
-    } catch {
-      setError("Der Embed-Code konnte nicht kopiert werden.");
+      setError(errorMessage);
     }
   }
 
@@ -212,14 +195,8 @@ export function AdminPollPage() {
     color: "#222",
     font: "inherit",
   };
-  const inlineCopyButtonStyle = {
-    marginLeft: "10px",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "4px",
-    verticalAlign: "baseline",
-  };
+  const isPublicLinkCopied = copiedShareItem === "public-link";
+  const isEmbedCodeCopied = copiedShareItem === "embed-code";
   const tabs = [
     { id: "results", label: "Ergebnisse" },
     { id: "edit", label: "Bearbeiten" },
@@ -345,102 +322,88 @@ export function AdminPollPage() {
               {poll.expiresAt &&
                 ` · Ende: ${dateTimeFormat.format(new Date(poll.expiresAt))}`}
             </p>
-            <p>
-              Öffentlicher Link:{" "}
-              <a href={`/p/${poll.publicId}`}>{publicUrl}</a>
-              <button
-                type="button"
-                onClick={() => handleCopyLink(publicUrl)}
-                className="vl-button vl-button-secondary vl-button-small"
-                style={{
-                  ...inlineCopyButtonStyle,
-                  borderColor: isPublicLinkCopied ? "#15803d" : "#ccc",
-                }}
-              >
-                Kopieren
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: "16px",
-                    color: "#15803d",
-                    opacity: isPublicLinkCopied ? 1 : 0,
-                    fontWeight: "900",
-                    fontSize: "1rem",
-                    lineHeight: "1",
-                  }}
-                >
-                  ✓
-                </span>
-              </button>
-            </p>
-            <div
-              style={{
-                display: "grid",
-                gap: "8px",
-              }}
-            >
-              <div>
-                <strong style={{ color: "#333" }}>Embed-Code</strong>
-                <p style={{ color: "#777", fontSize: "0.88rem" }}>
-                  Zum Einbetten dieser Abstimmung auf einer Website.
-                </p>
+            <section className="vl-share-panel" aria-label="Teilen und Einbetten">
+              <div className="vl-share-panel-header">
+                <div>
+                  <h3>Teilen & Einbetten</h3>
+                  <p>
+                    Teile den Abstimmungslink oder binde die kompakte Ansicht
+                    auf einer Website ein.
+                  </p>
+                </div>
               </div>
-              <pre
-                style={{
-                  margin: 0,
-                  maxWidth: "100%",
-                  overflowX: "auto",
-                  padding: "12px",
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                  background: "#f7f7f7",
-                  color: "#333",
-                  fontSize: "0.82rem",
-                  lineHeight: 1.45,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                <code
-                  style={{
-                    display: "block",
-                    padding: 0,
-                    background: "transparent",
-                    color: "inherit",
-                    font: "inherit",
-                  }}
-                >
-                  {embedCode}
-                </code>
-              </pre>
-              <div>
-                <button
-                  type="button"
-                  onClick={() => handleCopyEmbedCode(embedCode)}
-                  className="vl-button vl-button-secondary vl-button-small"
-                  style={{
-                    ...inlineCopyButtonStyle,
-                    marginLeft: 0,
-                    borderColor: isEmbedCodeCopied ? "#15803d" : "#ccc",
-                  }}
-                >
-                  Kopieren
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: "16px",
-                      color: "#15803d",
-                      opacity: isEmbedCodeCopied ? 1 : 0,
-                      fontWeight: "900",
-                      fontSize: "1rem",
-                      lineHeight: "1",
-                    }}
+
+              <div className="vl-share-block">
+                <div className="vl-share-block-header">
+                  <div>
+                    <strong>Öffentlicher Abstimmungslink</strong>
+                    <p>Für Teilnehmer, die abstimmen sollen.</p>
+                  </div>
+                </div>
+                <a href={`/p/${poll.publicId}`} className="vl-share-url">
+                  {publicUrl}
+                </a>
+                <div className="vl-share-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopyShareValue(
+                        publicUrl,
+                        "public-link",
+                        "Der Link konnte nicht kopiert werden."
+                      )
+                    }
+                    className={`vl-button vl-button-secondary vl-button-small ${
+                      isPublicLinkCopied ? "vl-button-success" : ""
+                    }`}
                   >
-                    ✓
-                  </span>
-                </button>
+                    {isPublicLinkCopied ? "Kopiert" : "Link kopieren"}
+                  </button>
+                  <a
+                    href={`/p/${poll.publicId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="vl-button vl-button-secondary vl-button-link vl-button-small"
+                  >
+                    Umfrage öffnen
+                  </a>
+                </div>
               </div>
-            </div>
+
+              <div className="vl-share-block">
+                <div className="vl-share-block-header">
+                  <div>
+                    <strong>Embed-/iframe-Code</strong>
+                    <p>Zum Einbetten einer kompakten Ergebnisansicht.</p>
+                  </div>
+                  <a href={`/embed/${poll.publicId}`} target="_blank" rel="noreferrer">
+                    Embed-Seite öffnen
+                  </a>
+                </div>
+                <pre className="vl-share-code">
+                  <code>{embedCode}</code>
+                </pre>
+                <div className="vl-share-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopyShareValue(
+                        embedCode,
+                        "embed-code",
+                        "Der Embed-Code konnte nicht kopiert werden."
+                      )
+                    }
+                    className={`vl-button vl-button-secondary vl-button-small ${
+                      isEmbedCodeCopied ? "vl-button-success" : ""
+                    }`}
+                  >
+                    {isEmbedCodeCopied
+                      ? "Kopiert"
+                      : "Einbettungscode kopieren"}
+                  </button>
+                </div>
+              </div>
+            </section>
             <p>
               Admin-Link:{" "}
               <a href={`/admin/${adminToken}`}>{adminUrl}</a>

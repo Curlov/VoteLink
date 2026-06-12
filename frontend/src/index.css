@@ -384,6 +384,125 @@ code {
   font-size: 0.9rem;
 }
 
+.vl-landing {
+  width: min(1040px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 42px 0 32px;
+  text-align: left;
+}
+
+.vl-landing-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 280px);
+  align-items: center;
+  gap: 36px;
+  min-height: 330px;
+  padding: 34px 44px;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.vl-landing-copy {
+  max-width: 650px;
+}
+
+.vl-landing-kicker,
+.vl-landing-card-label {
+  color: #666;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.vl-landing h1 {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #222;
+  font-size: 2.75rem;
+  line-height: 1.08;
+}
+
+.vl-landing-intro {
+  max-width: 640px;
+  margin-top: 18px;
+  color: #555;
+  font-size: 1.08rem;
+  line-height: 1.55;
+}
+
+.vl-landing-visual {
+  width: min(100%, 260px);
+  justify-self: center;
+}
+
+.vl-landing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.vl-landing-card {
+  display: grid;
+  align-content: space-between;
+  gap: 22px;
+  min-height: 188px;
+  padding: 22px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  color: #222;
+}
+
+.vl-landing-card h2 {
+  margin-top: 6px;
+  color: #222;
+  font-size: 1.35rem;
+}
+
+.vl-landing-card p:not(.vl-landing-card-label) {
+  margin-top: 8px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.vl-landing-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.vl-landing-benefit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #444;
+}
+
+.vl-landing-benefit span {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #333;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 .vl-panel-description {
   margin-top: 12px;
   color: #555;
@@ -826,6 +945,90 @@ code {
   gap: 14px;
 }
 
+.vl-share-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.vl-share-panel-header h3 {
+  margin: 0;
+  color: #222;
+}
+
+.vl-share-panel-header p,
+.vl-share-block-header p {
+  margin-top: 4px;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.vl-share-block {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.vl-share-block-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vl-share-block-header strong {
+  color: #333;
+}
+
+.vl-share-block-header a {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.vl-share-url {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #1d4ed8;
+  line-height: 1.45;
+}
+
+.vl-share-code {
+  margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f7f7f7;
+  color: #333;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.vl-share-code code {
+  display: block;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.vl-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .vl-admin-toolbar {
   display: flex;
   align-items: center;
@@ -1064,6 +1267,44 @@ code {
     width: 100%;
     min-height: 42px;
     padding: 10px 18px;
+  }
+
+  .vl-landing {
+    width: calc(100vw - 16px);
+    padding: 8px 0 24px;
+  }
+
+  .vl-landing-hero {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    min-height: 0;
+    padding: 22px 16px;
+    border-radius: 10px;
+  }
+
+  .vl-landing h1 {
+    font-size: 2rem;
+    line-height: 1.12;
+  }
+
+  .vl-landing-intro {
+    font-size: 1rem;
+  }
+
+  .vl-landing-visual {
+    width: min(68vw, 210px);
+  }
+
+  .vl-landing-grid,
+  .vl-landing-benefits {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .vl-landing-card {
+    min-height: 0;
+    padding: 16px;
   }
 
   .vl-bar-chart-scroll {

@@ -93,6 +93,7 @@ export function VotePage() {
   const [reportDetails, setReportDetails] = useState("");
   const [reportMessage, setReportMessage] = useState("");
   const [isReporting, setIsReporting] = useState(false);
+  const [isShareLinkCopied, setIsShareLinkCopied] = useState(false);
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => new Date());
 
@@ -229,6 +230,21 @@ export function VotePage() {
     }
   }
 
+  async function handleCopyShareLink() {
+    try {
+      const publicUrl = `${window.location.origin}/p/${publicId}`;
+
+      setError("");
+      await navigator.clipboard.writeText(publicUrl);
+      setIsShareLinkCopied(true);
+      window.setTimeout(() => {
+        setIsShareLinkCopied(false);
+      }, 2000);
+    } catch {
+      setError("Der Link konnte nicht kopiert werden.");
+    }
+  }
+
   if (isLoading) {
     return (
       <main>
@@ -272,6 +288,15 @@ export function VotePage() {
           <div className="vl-panel-header">
             <div className="vl-panel-header-row">
               <h2 className="vl-panel-title">{results.title}</h2>
+              <button
+                type="button"
+                onClick={handleCopyShareLink}
+                className={`vl-button vl-button-secondary vl-button-small ${
+                  isShareLinkCopied ? "vl-button-success" : ""
+                }`}
+              >
+                {isShareLinkCopied ? "Kopiert" : "Teilen"}
+              </button>
             </div>
 
             {results.description && (
