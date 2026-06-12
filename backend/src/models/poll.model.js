@@ -538,6 +538,59 @@ export async function getPollResultsByPublicId(publicId) {
   return buildPollResults(poll);
 }
 
+export async function getPublicPollMetaByPublicId(publicId) {
+  await expireActivePolls();
+
+  const pollResult = await pool.query(
+    `
+    SELECT
+      id,
+      public_id,
+      title,
+      description,
+      status,
+      allow_multiple_votes,
+      created_at,
+      expires_at
+    FROM polls
+    WHERE public_id = $1
+      AND status IN ('active', 'expired')
+    `,
+    [publicId]
+  );
+
+  const poll = pollResult.rows[0];
+
+  if (!poll) {
+    return null;
+  }
+
+  const optionsResult = await pool.query(
+    `
+    SELECT option_text, position
+    FROM poll_options
+    WHERE poll_id = $1
+    ORDER BY position ASC
+    LIMIT 5
+    `,
+    [poll.id]
+  );
+
+  return {
+    publicId: poll.public_id,
+    title: poll.title,
+    description: poll.description,
+    status: poll.status,
+    allowMultipleVotes: poll.allow_multiple_votes,
+    createdAt: poll.created_at,
+    expiresAt: poll.expires_at,
+    options: optionsResult.rows.map((option) => ({
+      text: option.option_text,
+      position: option.position,
+    })),
+  };
+}
+
 export async function getPollAdminByToken(adminToken) {
   const adminTokenHash = hashToken(adminToken);
 

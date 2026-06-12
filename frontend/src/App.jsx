@@ -4,6 +4,7 @@ import { VotePage } from "./pages/VotePage";
 import { AdminPollPage } from "./pages/AdminPollPage";
 import { ActivatePollPage } from "./pages/ActivatePollPage";
 import { OperatorAdminPage } from "./pages/OperatorAdminPage";
+import { EmbedPollPage } from "./pages/EmbedPollPage";
 
 function App() {
   return (
@@ -11,6 +12,8 @@ function App() {
       <Routes>
         <Route path="/" element={<CreatePollPage />} />
         <Route path="/p/:publicId" element={<VotePage />} />
+        <Route path="/poll/:publicId" element={<VotePage />} />
+        <Route path="/embed/:publicId" element={<EmbedPollPage />} />
         <Route path="/activate/:activationToken" element={<ActivatePollPage />} />
         <Route path="/admin/:adminToken" element={<AdminPollPage />} />
         <Route path="/operator-admin" element={<OperatorAdminPage />} />

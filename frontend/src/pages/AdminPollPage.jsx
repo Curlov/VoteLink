@@ -27,6 +27,7 @@ export function AdminPollPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState("results");
   const [isPublicLinkCopied, setIsPublicLinkCopied] = useState(false);
+  const [isEmbedCodeCopied, setIsEmbedCodeCopied] = useState(false);
 
   useEffect(() => {
     async function loadAdminPoll() {
@@ -152,6 +153,22 @@ export function AdminPollPage() {
     }
   }
 
+  async function handleCopyEmbedCode(embedCode) {
+    try {
+      setError("");
+      await navigator.clipboard.writeText(embedCode);
+      setIsEmbedCodeCopied(true);
+      if (copyResetTimeoutRef.current) {
+        window.clearTimeout(copyResetTimeoutRef.current);
+      }
+      copyResetTimeoutRef.current = window.setTimeout(() => {
+        setIsEmbedCodeCopied(false);
+      }, 2000);
+    } catch {
+      setError("Der Embed-Code konnte nicht kopiert werden.");
+    }
+  }
+
   if (isLoading) {
     return (
       <main>
@@ -168,8 +185,17 @@ export function AdminPollPage() {
     );
   }
 
-  const publicUrl = `${window.location.origin}/p/${poll.publicId}`;
-  const adminUrl = `${window.location.origin}/admin/${adminToken}`;
+  const appBaseUrl = window.location.origin;
+  const publicUrl = `${appBaseUrl}/p/${poll.publicId}`;
+  const adminUrl = `${appBaseUrl}/admin/${adminToken}`;
+  const embedUrl = `${appBaseUrl}/embed/${poll.publicId}`;
+  const embedCode = `<iframe
+  src="${embedUrl}"
+  width="100%"
+  height="360"
+  style="border:0;border-radius:16px;"
+  loading="lazy"
+></iframe>`;
   const isExpired = poll.expiresAt && new Date(poll.expiresAt) <= new Date();
   const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
     dateStyle: "medium",
@@ -347,6 +373,74 @@ export function AdminPollPage() {
                 </span>
               </button>
             </p>
+            <div
+              style={{
+                display: "grid",
+                gap: "8px",
+              }}
+            >
+              <div>
+                <strong style={{ color: "#333" }}>Embed-Code</strong>
+                <p style={{ color: "#777", fontSize: "0.88rem" }}>
+                  Zum Einbetten dieser Abstimmung auf einer Website.
+                </p>
+              </div>
+              <pre
+                style={{
+                  margin: 0,
+                  maxWidth: "100%",
+                  overflowX: "auto",
+                  padding: "12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  background: "#f7f7f7",
+                  color: "#333",
+                  fontSize: "0.82rem",
+                  lineHeight: 1.45,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                <code
+                  style={{
+                    display: "block",
+                    padding: 0,
+                    background: "transparent",
+                    color: "inherit",
+                    font: "inherit",
+                  }}
+                >
+                  {embedCode}
+                </code>
+              </pre>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyEmbedCode(embedCode)}
+                  className="vl-button vl-button-secondary vl-button-small"
+                  style={{
+                    ...inlineCopyButtonStyle,
+                    marginLeft: 0,
+                    borderColor: isEmbedCodeCopied ? "#15803d" : "#ccc",
+                  }}
+                >
+                  Kopieren
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: "16px",
+                      color: "#15803d",
+                      opacity: isEmbedCodeCopied ? 1 : 0,
+                      fontWeight: "900",
+                      fontSize: "1rem",
+                      lineHeight: "1",
+                    }}
+                  >
+                    ✓
+                  </span>
+                </button>
+              </div>
+            </div>
             <p>
               Admin-Link:{" "}
               <a href={`/admin/${adminToken}`}>{adminUrl}</a>
