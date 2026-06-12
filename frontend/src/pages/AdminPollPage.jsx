@@ -217,9 +217,9 @@ export function AdminPollPage() {
     marginTop: "6px",
     padding: "10px 14px",
     borderRadius: "12px",
-    border: "1px solid #ccc",
-    background: "#fff",
-    color: "#222",
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+    color: "var(--text)",
     font: "inherit",
   };
   const isPublicLinkCopied = copiedShareItem === "public-link";
@@ -238,12 +238,12 @@ export function AdminPollPage() {
         style={{
           maxWidth: "820px",
           margin: "var(--vl-page-top-space) auto",
-          borderRadius: "24px",
+          borderRadius: "14px",
           overflow: "hidden",
-          border: "1px solid #ddd",
-          boxShadow: "0 12px 32px rgba(0, 0, 0, 0.12)",
-          background: "#fff",
-          color: "#222",
+          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow)",
+          background: "var(--card)",
+          color: "var(--text)",
           textAlign: "left",
         }}
       >
@@ -251,14 +251,14 @@ export function AdminPollPage() {
           style={{
             position: "relative",
             padding: "28px 36px",
-            background: "#f3f3f3",
-            borderBottom: "1px solid #ddd",
+            background: "#fbfbfe",
+            borderBottom: "1px solid var(--border)",
           }}
         >
           <p
             style={{
               marginBottom: "6px",
-              color: "#666",
+              color: "var(--primary)",
               fontSize: "0.9rem",
               textTransform: "uppercase",
               letterSpacing: "0.08em",
@@ -279,7 +279,7 @@ export function AdminPollPage() {
               style={{
                 margin: 0,
                 flex: "1 1 280px",
-                color: "#222",
+                color: "var(--text)",
                 fontSize: "2rem",
                 lineHeight: "1.15",
               }}
@@ -291,7 +291,7 @@ export function AdminPollPage() {
             <p
               style={{
                 marginTop: "12px",
-                color: "#555",
+                color: "var(--muted)",
                 lineHeight: "1.5",
               }}
             >
@@ -320,7 +320,7 @@ export function AdminPollPage() {
             style={{
               display: "grid",
               gap: "8px",
-              color: "#555",
+              color: "var(--muted)",
               fontSize: "0.95rem",
             }}
           >
@@ -341,7 +341,7 @@ export function AdminPollPage() {
             </p>
             <p>
               Status:{" "}
-              <strong style={{ color: isExpired ? "#991b1b" : "#15803d" }}>
+              <strong style={{ color: isExpired ? "#991b1b" : "var(--primary-hover)" }}>
                 {isExpired ? "Abgelaufen" : "Aktiv"}
               </strong>
             </p>
@@ -445,17 +445,17 @@ export function AdminPollPage() {
               Admin-Link:{" "}
               <a href={`/admin/${adminToken}`}>{adminUrl}</a>
               <br />
-              <span style={{ color: "#777", fontSize: "0.88rem" }}>
+              <span style={{ color: "var(--muted)", fontSize: "0.88rem" }}>
                 Verwaltungslink nur für den Ersteller. Nicht weitergeben.
               </span>
             </p>
-            <p style={{ color: "#777", fontSize: "0.9rem", lineHeight: "1.45" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.9rem", lineHeight: "1.45" }}>
               Abgelaufene Free-Abstimmungen werden nach der konfigurierten
               Aufbewahrungsfrist automatisch gelöscht. Sofortiges Löschen ist
               jederzeit über den Tab "Löschen" möglich.
             </p>
             {adminMessage && (
-              <p style={{ color: "#15803d", fontWeight: "700" }}>
+              <p style={{ color: "var(--primary-hover)", fontWeight: "700" }}>
                 {adminMessage}
               </p>
             )}
@@ -472,7 +472,7 @@ export function AdminPollPage() {
               flexWrap: "wrap",
               gap: "8px",
               paddingTop: "14px",
-              borderTop: "1px solid #ddd",
+              borderTop: "1px solid var(--border)",
             }}
           >
             {tabs.map((tab) => {
@@ -504,8 +504,8 @@ export function AdminPollPage() {
               gap: "12px",
             }}
           >
-            <h3 style={{ margin: 0, color: "#222" }}>Abstimmung bearbeiten</h3>
-            <label style={{ color: "#333", fontWeight: "700" }}>
+            <h3 style={{ margin: 0, color: "var(--text)" }}>Abstimmung bearbeiten</h3>
+            <label style={{ color: "var(--text)", fontWeight: "700" }}>
               Titel
               <input
                 type="text"
@@ -514,7 +514,7 @@ export function AdminPollPage() {
                 style={inputStyle}
               />
             </label>
-            <label style={{ color: "#333", fontWeight: "700" }}>
+            <label style={{ color: "var(--text)", fontWeight: "700" }}>
               Beschreibung
               <textarea
                 value={editDescription}
@@ -549,7 +549,7 @@ export function AdminPollPage() {
               gap: "14px",
             }}
           >
-            <h3 style={{ margin: 0, color: "#222" }}>Laufzeit verwalten</h3>
+            <h3 style={{ margin: 0, color: "var(--text)" }}>Laufzeit verwalten</h3>
             <div
               style={{
                 display: "flex",
@@ -646,44 +646,25 @@ export function AdminPollPage() {
             )}
           </div>
 
-          <div style={{ display: "grid", gap: "12px" }}>
+          <div className="vl-compact-results">
             {poll.options.map((option) => (
               <div key={option.id}>
                 <div
+                  className="vl-result-option"
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "16px",
-                    marginBottom: "6px",
-                    fontSize: "0.95rem",
+                    "--value": `${option.percentage}%`,
                   }}
                 >
-                  <span>{option.text}</span>
-                  <strong>
+                  <span className="vl-result-option-title">{option.text}</span>
+                  <span className="vl-result-option-value">
                     {option.voteCount} · {option.percentage}%
-                  </strong>
-                </div>
-                <div
-                  style={{
-                    height: "10px",
-                    borderRadius: "999px",
-                    background: "#e5e5e5",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${option.percentage}%`,
-                      height: "100%",
-                      background: "#333",
-                    }}
-                  />
+                  </span>
                 </div>
                 {!poll.isAnonymous && option.voterNames.length > 0 && (
                   <p
                     style={{
                       marginTop: "6px",
-                      color: "#777",
+                      color: "var(--muted)",
                       fontSize: "0.85rem",
                       lineHeight: "1.4",
                     }}

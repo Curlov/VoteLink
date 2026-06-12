@@ -417,21 +417,19 @@ export function VotePage() {
             {shouldUseCompactResults ? (
               <div className="vl-compact-results">
                 {results.options.map((option) => (
-                  <div key={option.id}>
-                    <div className="vl-compact-result-row">
-                      <span>{option.text}</span>
-                      <strong>
-                        {option.voteCount} · {option.percentage}%
-                      </strong>
-                    </div>
-                    <div className="vl-progress-track">
-                      <div
-                        className="vl-progress-fill"
-                        style={{
-                          "--progress-width": `${option.percentage}%`,
-                        }}
-                      />
-                    </div>
+                  <div
+                    key={option.id}
+                    className="vl-result-option"
+                    style={{
+                      "--value": `${option.percentage}%`,
+                    }}
+                  >
+                    <span className="vl-result-option-title">
+                      {option.text}
+                    </span>
+                    <span className="vl-result-option-value">
+                      {option.voteCount} · {option.percentage}%
+                    </span>
                   </div>
                 ))}
               </div>

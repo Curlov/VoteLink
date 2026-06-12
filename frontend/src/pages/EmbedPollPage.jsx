@@ -150,19 +150,15 @@ export function EmbedPollPage() {
 
         <div className="vl-embed-results">
           {topOptions.map((option) => (
-            <div key={option.id} className="vl-embed-option">
-              <div className="vl-embed-option-row">
-                <span>{option.text}</span>
-                <strong>
-                  {option.voteCount} · {option.percentage}%
-                </strong>
-              </div>
-              <div className="vl-embed-progress-track">
-                <div
-                  className="vl-embed-progress-fill"
-                  style={{ "--progress-width": `${option.percentage}%` }}
-                />
-              </div>
+            <div
+              key={option.id}
+              className="vl-result-option vl-embed-result-option"
+              style={{ "--value": `${option.percentage}%` }}
+            >
+              <span className="vl-result-option-title">{option.text}</span>
+              <span className="vl-result-option-value">
+                {option.voteCount} · {option.percentage}%
+              </span>
             </div>
           ))}
         </div>
