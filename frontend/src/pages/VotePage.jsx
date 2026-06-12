@@ -10,8 +10,6 @@ import {
 import { LegalInfo } from "../components/LegalInfo";
 import { getAbsoluteAppUrl, shareOrCopyUrl } from "../utils/shareUtils";
 
-const COMPACT_RESULT_OPTION_THRESHOLD = 0;
-
 function createFallbackToken() {
   const bytes = new Uint8Array(24);
   window.crypto.getRandomValues(bytes);
@@ -272,7 +270,6 @@ export function VotePage() {
     );
   }
 
-  const optionCount = results?.options.length || 1;
   const expiresAtDate = poll?.expiresAt ? new Date(poll.expiresAt) : null;
   const isExpired = expiresAtDate && expiresAtDate <= now;
   const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
@@ -285,13 +282,6 @@ export function VotePage() {
   const isParticipantLimitReached = Boolean(
     results?.isParticipantLimitReached
   );
-  const shouldUseCompactResults =
-    optionCount > COMPACT_RESULT_OPTION_THRESHOLD;
-
-  const barWidth = optionCount <= 3 ? 72 : optionCount <= 5 ? 58 : 44;
-  const optionWidth = optionCount <= 3 ? 150 : optionCount <= 5 ? 125 : 80;
-  const chartGap = optionCount <= 3 ? 34 : optionCount <= 5 ? 24 : 16;
-
   return (
     <main>
       {results && (
@@ -414,86 +404,27 @@ export function VotePage() {
                 : `Teilnehmer: ${results.totalVoters}/${results.maxVoters}`}
             </p>
 
-            {shouldUseCompactResults ? (
-              <div className="vl-compact-results">
-                {results.options.map((option) => (
-                  <div
-                    key={option.id}
-                    className="vl-result-option"
-                    style={{
-                      "--value": `${option.percentage}%`,
-                    }}
-                  >
-                    <span className="vl-result-option-title">
-                      {option.text}
-                    </span>
-                    <span className="vl-result-option-value">
-                      {option.voteCount} · {option.percentage}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="vl-bar-chart-scroll">
+            <div
+              className="vl-compact-results"
+              data-option-count={results.options.length}
+            >
+              {results.options.map((option) => (
                 <div
-                  className="vl-bar-chart"
-                  data-option-count={optionCount}
+                  key={option.id}
+                  className="vl-result-option"
                   style={{
-                    "--chart-gap": `${chartGap}px`,
+                    "--value": `${option.percentage}%`,
                   }}
                 >
-                  {results.options.map((option) => {
-                    const barHeight =
-                      results.totalVotes === 0 ? 0 : option.percentage;
-
-                    return (
-                      <div
-                        key={option.id}
-                        className="vl-bar-column"
-                        style={{
-                          "--option-width": `${optionWidth}px`,
-                        }}
-                      >
-                        <div className="vl-bar-stage">
-                          <div
-                            className="vl-bar"
-                            style={{
-                              "--bar-width": `${barWidth}px`,
-                              "--bar-height": `${barHeight}%`,
-                              "--bar-radius":
-                                barHeight > 0 ? "12px 12px 0 0" : "0",
-                            }}
-                            title={`${option.voteCount} ${
-                              results.allowMultipleVotes
-                                ? "Auswahlen"
-                                : "Stimmen"
-                            } (${option.percentage}%)`}
-                          />
-                        </div>
-
-                        <div
-                          className="vl-bar-value"
-                          style={{
-                            "--bar-width": `${barWidth}px`,
-                          }}
-                        >
-                          {option.percentage}%
-                        </div>
-
-                        <strong
-                          className="vl-bar-label"
-                          style={{
-                            "--option-width": `${optionWidth}px`,
-                          }}
-                        >
-                          {option.text}
-                        </strong>
-                      </div>
-                    );
-                  })}
+                  <span className="vl-result-option-title">
+                    {option.text}
+                  </span>
+                  <span className="vl-result-option-value">
+                    {option.voteCount} · {option.percentage}%
+                  </span>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
 
           <div className="vl-vote-panel">

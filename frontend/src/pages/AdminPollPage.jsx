@@ -646,7 +646,10 @@ export function AdminPollPage() {
             )}
           </div>
 
-          <div className="vl-compact-results">
+          <div
+            className="vl-compact-results"
+            data-option-count={poll.options.length}
+          >
             {poll.options.map((option) => (
               <div key={option.id}>
                 <div
