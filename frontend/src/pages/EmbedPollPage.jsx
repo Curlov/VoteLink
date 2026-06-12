@@ -137,12 +137,6 @@ export function EmbedPollPage() {
           </span>
         </div>
 
-        {isExpired && (
-          <p className="vl-embed-ended">
-            Diese Abstimmung ist beendet. Das Ergebnis bleibt hier sichtbar.
-          </p>
-        )}
-
         {description && (
           <p className="vl-embed-description">{description}</p>
         )}
@@ -175,15 +169,17 @@ export function EmbedPollPage() {
 
         <div className="vl-embed-footer">
           {isExpired ? (
-            <a className="vl-button vl-button-secondary vl-button-link" href="/" target="_blank" rel="noreferrer">
-              Eigene Abstimmung erstellen
-            </a>
+            <span className="vl-embed-ended">
+              Diese Abstimmung ist beendet.
+            </span>
           ) : (
             <a className="vl-button vl-button-link" href={pollUrl} target="_blank" rel="noreferrer">
               Jetzt abstimmen
             </a>
           )}
-          <span>{appHost}</span>
+          <a className="vl-embed-host-link" href="/" target="_blank" rel="noreferrer">
+            {appHost}
+          </a>
         </div>
       </section>
     </main>

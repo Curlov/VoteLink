@@ -669,12 +669,9 @@ code {
 }
 
 .vl-embed-ended {
-  padding: 9px 11px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
   color: #555;
   font-size: 0.86rem;
+  font-weight: 700;
   line-height: 1.4;
 }
 
@@ -741,11 +738,16 @@ code {
   padding-top: 4px;
 }
 
-.vl-embed-footer span {
+.vl-embed-host-link {
   color: #777;
   font-size: 0.82rem;
   font-weight: 700;
   overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.vl-embed-host-link:hover {
+  color: #555;
 }
 
 .vl-bar-chart-scroll {
